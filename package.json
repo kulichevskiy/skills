@@ -1,0 +1,29 @@
+{
+  "name": "claude-skills",
+  "version": "0.1.0",
+  "description": "Коллекция скиллов для Claude Code",
+  "type": "module",
+  "bin": {
+    "claude-skills": "bin/claude-skills.mjs"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "skills",
+    "agent-skills"
+  ],
+  "author": "Alexey Kulichevskiy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kulichevskiy/skills.git"
+  }
+}
