@@ -1,5 +1,5 @@
 {
-  "name": "claude-skills",
+  "name": "@kulichevskiy/skills",
   "version": "0.1.0",
   "description": "Skills for Claude Code, installable with npx",
   "type": "module",
