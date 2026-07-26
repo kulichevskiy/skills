@@ -1,7 +1,7 @@
 {
   "name": "claude-skills",
   "version": "0.1.0",
-  "description": "Коллекция скиллов для Claude Code",
+  "description": "Skills for Claude Code, installable with npx",
   "type": "module",
   "bin": {
     "claude-skills": "bin/claude-skills.mjs"

@@ -24,16 +24,16 @@ function summarize(skillFile) {
 
 function usage(skills) {
   console.log(`
-Скиллы для Claude Code.
+Skills for Claude Code.
 
-  npx github:kulichevskiy/skills <скилл>             в текущий проект, ./.claude/skills/
-  npx github:kulichevskiy/skills <скилл> --global    для всех проектов, ~/.claude/skills/
-  npx github:kulichevskiy/skills <скилл> --force     перезаписать установленный
+  npx github:kulichevskiy/skills <skill>             into this project, ./.claude/skills/
+  npx github:kulichevskiy/skills <skill> --global    for every project, ~/.claude/skills/
+  npx github:kulichevskiy/skills <skill> --force     overwrite an installed copy
 
-Доступно:
+Available:
 `)
   if (skills.length === 0) {
-    console.log('  (ничего не найдено — каталог skills/ пуст)\n')
+    console.log('  (nothing found — skills/ is empty)\n')
     return
   }
   for (const skill of skills) {
@@ -60,7 +60,7 @@ if (!requested || flags.has('--help')) {
 
 const skill = skills.find((it) => it.name === requested)
 if (!skill) {
-  fail(`Скилла «${requested}» здесь нет. Доступно: ${skills.map((it) => it.name).join(', ') || '(пусто)'}`)
+  fail(`No skill named "${requested}" here. Available: ${skills.map((it) => it.name).join(', ') || '(none)'}`)
 }
 
 const root = flags.has('--global') ? homedir() : process.cwd()
@@ -68,16 +68,16 @@ const target = join(root, '.claude', 'skills')
 const destination = join(target, skill.name)
 
 if (existsSync(destination) && !flags.has('--force')) {
-  fail(`Уже установлен: ${destination}\n  Перезаписать — добавь --force.`)
+  fail(`Already installed at ${destination}\n  Add --force to overwrite it.`)
 }
 
 mkdirSync(target, { recursive: true })
 cpSync(join(SOURCE, skill.name), destination, { recursive: true })
 
 const shown = flags.has('--global') ? destination : relative(process.cwd(), destination) || destination
-const scope = flags.has('--global') ? 'во всех проектах' : 'в этом проекте'
+const scope = flags.has('--global') ? 'in every project' : 'in this project'
 
 console.log(`
-  Установлен: ${shown}
-  Доступен ${scope} — вызывается как /${skill.name} или своими триггерами из description.
+  Installed at ${shown}
+  Available ${scope} — call it as /${skill.name} or let its description triggers fire.
 `)

@@ -1,56 +1,56 @@
 # claude-skills
 
-Скиллы для Claude Code, устанавливаемые одной командой.
+Skills for Claude Code, installable with one command.
 
-Скилл — это набор инструкций, который агент подхватывает целиком, когда задача ему соответствует. Смысл в предсказуемости: агент идёт одним и тем же путём каждый запуск, вместо того чтобы каждый раз изобретать процесс заново.
+A skill is a set of instructions the agent picks up whole when a task matches it. The point is predictability: the agent walks the same path every run instead of reinventing the process each time.
 
-## Установка
+## Install
 
 ```bash
-# в текущий проект — ./.claude/skills/
+# into the current project — ./.claude/skills/
 npx github:kulichevskiy/skills setup-env
 
-# для всех проектов — ~/.claude/skills/
+# for every project — ~/.claude/skills/
 npx github:kulichevskiy/skills setup-env --global
 
-# посмотреть, что доступно
+# see what is available
 npx github:kulichevskiy/skills
 ```
 
-Публикация в npm не нужна: `npx` умеет ставить пакет прямо из GitHub. Обновления прилетают обычным пушем — повторный вызов с `--force` перезапишет установленную версию.
+No npm publish involved: `npx` installs straight from GitHub. Updates ship with an ordinary push — running the command again with `--force` overwrites the installed copy.
 
-Проект или глобально — выбор про то, кому скилл нужен. В проект, если он часть процесса этого репозитория и должен ехать вместе с ним в гите. Глобально, если это твой личный инструмент и таскать его по репозиториям не хочется.
+Project or global is a question of who needs the skill. Into the project if it is part of that repository's process and should travel with it in git. Global if it is your own tool and you would rather not carry it from repo to repo.
 
-После установки скилл вызывается по имени (`/setup-env`) или срабатывает сам, когда запрос совпадает с его триггерами.
+Once installed, a skill is callable by name (`/setup-env`) or fires on its own when a request matches its triggers.
 
 ## setup-env
 
-Приводит машину в состояние, в котором можно работать над проектом.
+Gets a machine into a state where you can work on a project.
 
-Работает в двух режимах. **Проверка** («проверь окружение», «всё ли на месте») ничего не меняет: выясняет требования, замеряет, отдаёт вердикт со списком незелёного. **Настройка** («настрой окружение», «что установить») проходит весь путь до конца. Если формулировка допускает оба чтения, скилл начинает с проверки — она дешевле и её результат всё равно нужен настройке.
+It runs in two modes. **Check** ("check my environment", "is everything in place") changes nothing: it works out the requirements, measures, and returns a verdict with the list of what is not green. **Setup** ("set up my environment", "what do I install") walks the whole way. When the wording admits both readings the skill starts with the check — it costs less, and setup needs its result anyway.
 
-Что он делает не так, как это обычно происходит само:
+What it does differently from how this usually goes on its own:
 
-**Замер перед установкой.** Сначала выясняется, что уже стоит, и ставится только отсутствующее — вместо установки поверх работающего.
+**Measure before installing.** It first establishes what is already present and installs only what is missing, rather than installing over a working setup.
 
-**Проверка вместо кода возврата.** Пункт считается закрытым, только когда прогнана его собственная проверка и показан вывод. Установка, вернувшая ноль, ещё ничего не доказывает: `docker --version` отвечает и при мёртвом демоне, поэтому Docker проверяется запуском контейнера.
+**A check, not an exit code.** An item counts as closed only once its own check has run and the output is shown. An install returning zero proves nothing yet: `docker --version` answers even when the daemon is dead, which is why Docker is verified by running a container.
 
-**Регистрации отдаются первыми.** Аккаунты и доступы не зависят от установленного софта, поэтому запрос на них уходит человеку до начала установки — он регистрируется, пока агент работает, а не после.
+**Sign-ups go out first.** Accounts and access requests do not depend on installed software, so they reach the human before installation starts — they register while the agent works, not afterwards.
 
-**Перепроверка вместо доверия.** То, что сделал человек, подтверждается командой агента, а не словами «готово».
+**Verification, not trust.** Whatever the human did gets confirmed by the agent's own command rather than by the word "done".
 
-### Откуда он берёт список требований
+### Where it gets the requirements
 
-Источник правды — документ проекта: `PREREQUISITES.md`, `CONTRIBUTING.md` или раздел README про установку. Есть такой документ — скилл следует ему целиком, включая команды платформ и блок проверки.
+The source of truth is the project's own document: `PREREQUISITES.md`, `CONTRIBUTING.md`, or the install section of the README. Where such a document exists the skill follows it in full, including platform commands and the verification block.
 
-Документа нет — требования выводятся из репозитория: манифесты и лок-файлы дают инструменты и версии, `.env.example` и конфигурация деплоя выдают внешние сервисы, а значит регистрации. Версии из CI-workflow считаются надёжнее версий из манифеста: workflow описывает то, на чём тесты реально проходят, манифест часто описывает пожелание.
+Where none exists, requirements are derived from the repository: manifests and lockfiles yield tools and versions, while `.env.example` and the deployment configuration reveal external services, and therefore sign-ups. Versions from a CI workflow are treated as more reliable than versions from a manifest — a workflow records what the tests actually pass on, whereas a manifest often records an intention.
 
-Собранный список скилл предлагает записать в `PREREQUISITES.md` — заготовка лежит рядом с ним. Со следующего запуска источником станет документ, а не разбор манифестов.
+The skill then offers to write the assembled list into `PREREQUISITES.md`; a starting template sits beside it. From the next run on, the document is the source instead of inference.
 
-## Добавить свой скилл
+## Adding your own skill
 
-Положи каталог в `skills/<имя>/` с файлом `SKILL.md` внутри — установщик подхватит его автоматически, ничего регистрировать не нужно. Соседние файлы каталога копируются вместе со скиллом, так что справочная часть выносится в отдельные файлы и подгружается только той веткой, которой нужна.
+Drop a directory into `skills/<name>/` with a `SKILL.md` inside — the installer picks it up automatically, with nothing to register. Sibling files in that directory are copied along with the skill, so reference material can live in separate files and load only for the branch that needs it.
 
-## Лицензия
+## License
 
 MIT
