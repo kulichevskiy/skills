@@ -1,7 +1,7 @@
 {
   "name": "@kulichevskiy/skills",
   "version": "0.1.0",
-  "description": "Skills for Claude Code, installable with npx",
+  "description": "Agent skills for Claude Code, Cursor, Codex and GitHub Copilot, installable with npx",
   "type": "module",
   "bin": {
     "claude-skills": "bin/claude-skills.mjs"
@@ -17,6 +17,9 @@
   "keywords": [
     "claude-code",
     "claude",
+    "cursor",
+    "codex",
+    "copilot",
     "skills",
     "agent-skills"
   ],
