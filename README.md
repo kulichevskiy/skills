@@ -14,18 +14,27 @@ Not a catalogue: this repository holds a small number of skills that get used of
 
 ## Install
 
+Two routes, same questions and the same result. Which one you want depends on whether the machine has Node on it.
+
+**With Node** — `npx` ships with it:
+
 ```bash
-# into the current project
-npx github:kulichevskiy/skills setup-env
-
-# for every project
-npx github:kulichevskiy/skills setup-env --global
-
-# see what is available
-npx github:kulichevskiy/skills
+npx github:kulichevskiy/skills setup-env            # into this project
+npx github:kulichevskiy/skills setup-env --global   # for every project
+npx github:kulichevskiy/skills                      # see what is available
 ```
 
-Two questions get asked: which agent reads the skill, and which language it should answer you in. Pass `--target` and `--lang` to answer them up front, and both are skipped when the output is not a terminal — the command stays usable from a script, where it installs for Claude Code in English.
+**Without Node** — an empty machine, which is the case `setup-env` exists for. This needs only `curl` and `tar`, both of which macOS and every Linux already have:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kulichevskiy/skills/main/install.sh | sh -s -- setup-env
+```
+
+The `-s --` matters: it hands what follows to the script rather than to `sh`. Add `--global` after the skill name the same way. It is one file of shell, [`install.sh`](install.sh), if you would rather read it before piping it anywhere.
+
+On Windows, use either route from inside WSL. PowerShell has no `sh`, so the second one does not work there.
+
+Both ask two questions: which agent reads the skill, and which language it should answer you in. Pass `--target` and `--lang` to answer them up front. Both are skipped where there is no terminal to ask on, so either command stays usable from a script, where it installs for Claude Code in English.
 
 ```bash
 npx github:kulichevskiy/skills setup-env --target=cursor --lang=Russian
@@ -40,7 +49,7 @@ npx github:kulichevskiy/skills setup-env --target=cursor --lang=Russian
 
 Project or global is a question of who needs the skill. Into the project if it is part of that repository's process and should travel with it in git. Global if it is your own tool and you would rather not carry it from repo to repo.
 
-Requirements are Node 18 or newer, and one of the four agents above. No npm publish is involved: `npx` installs straight from GitHub, so updates ship with an ordinary push — run the command again with `--force` to overwrite the installed copy. To remove a skill, delete its folder.
+What you need is one of the four agents above, plus Node 18 or newer for the `npx` route — the shell route needs nothing beyond `curl` and `tar`. No npm publish is involved either way: both install straight from GitHub, so updates ship with an ordinary push. Run the command again with `--force` to overwrite an installed copy, and delete the folder to remove one.
 
 Only the installed copy is told which language to answer in; the skill in this repository stays English, so `--force` keeps overwriting cleanly.
 
