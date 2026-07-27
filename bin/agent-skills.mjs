@@ -1,5 +1,10 @@
 #!/usr/bin/env node
-import { appendFileSync, cpSync, existsSync, readdirSync, readFileSync, mkdirSync } from 'node:fs'
+// This is one of two implementations of one installer: install.sh is the other,
+// and neither can be built on the other, since this one needs Node and that one
+// exists precisely for machines without it. They must answer identically.
+// test/parity.sh runs both over the same matrix and fails on any difference —
+// change one side and run it.
+import { appendFileSync, cpSync, existsSync, readdirSync, readFileSync, mkdirSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
@@ -103,18 +108,21 @@ function localize(skillFile, language) {
   return true
 }
 
+const KNOWN = ['target', 'lang', 'global', 'force', 'help']
 const args = process.argv.slice(2)
 const flags = new Map()
 for (const arg of args.filter((it) => it.startsWith('--'))) {
   const [key, value] = arg.slice(2).split('=')
+  if (!KNOWN.includes(key)) fail(`Unknown option: ${arg}`)
   flags.set(key, value ?? true)
 }
 const requested = args.find((it) => !it.startsWith('--'))
 const skills = available()
 
+// Listing what is available is a documented way to run this, not a misuse.
 if (!requested || flags.has('help')) {
   usage(skills)
-  process.exit(requested ? 0 : 1)
+  process.exit(0)
 }
 
 const skill = skills.find((it) => it.name === requested)
@@ -122,12 +130,21 @@ if (!skill) {
   fail(`No skill named "${requested}" here. Available: ${skills.map((it) => it.name).join(', ') || '(none)'}`)
 }
 
-let target = null
-if (flags.has('target')) {
-  target = TARGETS.find((it) => it.name === String(flags.get('target')).toLowerCase())
-  if (!target) fail(`Unknown --target. Pick one of: ${TARGETS.map((it) => it.name).join(', ')}`)
+// A flag that takes a value and was given none is a slip, not a way to ask the
+// question anyway — say so rather than guessing which was meant.
+function valued(flag) {
+  if (!flags.has(flag)) return null
+  const value = flags.get(flag)
+  if (value === true || !String(value).trim()) fail(`--${flag} needs a value, as --${flag}=<value>.`)
+  return String(value).trim()
 }
-let language = typeof flags.get('lang') === 'string' ? flags.get('lang') : null
+
+const named = valued('target')
+if (named && !TARGETS.some((it) => it.name === named.toLowerCase())) {
+  fail(`Unknown --target "${named}". Pick one of: ${TARGETS.map((it) => it.name).join(', ')}`)
+}
+let target = named ? TARGETS.find((it) => it.name === named.toLowerCase()) : null
+let language = valued('lang')
 
 if ((!target || !language) && process.stdin.isTTY && process.stdout.isTTY) {
   const io = reader()
@@ -150,6 +167,9 @@ if (existsSync(destination) && !flags.has('force')) {
 }
 
 mkdirSync(directory, { recursive: true })
+// Copying over the old copy would merge, leaving behind files the skill has
+// since dropped. --force means replace, so clear it first.
+rmSync(destination, { recursive: true, force: true })
 cpSync(join(SOURCE, skill.name), destination, { recursive: true })
 const localized = localize(join(destination, 'SKILL.md'), language)
 

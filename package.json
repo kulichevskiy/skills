@@ -4,11 +4,12 @@
   "description": "Agent skills for Claude Code, Cursor, Codex and GitHub Copilot, installable with npx",
   "type": "module",
   "bin": {
-    "claude-skills": "bin/claude-skills.mjs"
+    "agent-skills": "bin/agent-skills.mjs"
   },
   "files": [
     "bin",
     "skills",
+    "install.sh",
     "README.md"
   ],
   "engines": {

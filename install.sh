@@ -1,6 +1,11 @@
 #!/bin/sh
 # Installs a skill on a machine with no Node on it — curl and tar are enough.
-# Same questions, destinations and defaults as the npx route.
+#
+# This is the second of two implementations of one installer: bin/agent-skills.mjs
+# is the other, and neither can be built on the other, since that one needs Node
+# and this one exists precisely for machines without it. They must answer
+# identically. test/parity.sh runs both over the same matrix and fails on any
+# difference — change one side and run it.
 set -eu
 
 REPO="kulichevskiy/skills"
@@ -70,6 +75,10 @@ fetch() {
 SKILL=""; TARGET=""; SPEAK=""; EVERYWHERE=""; FORCE=""
 for arg do
   case "$arg" in
+    # A flag that takes a value and was given none is a slip, not a way to ask
+    # the question anyway. These must precede their =* forms to match first.
+    --target|--target=) fail "--target needs a value, as --target=<agent>." ;;
+    --lang|--lang=)     fail "--lang needs a value, as --lang=<language>." ;;
     --target=*) TARGET="${arg#--target=}" ;;
     --lang=*)   SPEAK="${arg#--lang=}" ;;
     --global)   EVERYWHERE=1 ;;
@@ -80,21 +89,42 @@ for arg do
   esac
 done
 
-command -v tar > /dev/null 2>&1 || fail "This needs tar, and it is not installed."
-
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT INT TERM
-fetch "$TARBALL" | tar -xzf - -C "$TMP" --strip-components=1
-[ -d "$TMP/skills" ] || fail "Downloaded $REPO but found no skills in it."
+# A bare `trap ... INT` runs the handler and then resumes where it left off, so
+# Ctrl-C would carry on with the temporary tree already deleted. Exit instead.
+trap 'rm -rf "$TMP"' EXIT
+trap 'rm -rf "$TMP"; exit 130' INT
+trap 'rm -rf "$TMP"; exit 143' TERM
 
-AVAILABLE="$(ls "$TMP/skills" | tr '\n' ' ')"
+if [ -n "${SKILLS_SOURCE:-}" ]; then
+  # Test seam, so test/parity.sh can check a working copy rather than whatever
+  # is published on the branch.
+  cp -R "$SKILLS_SOURCE/skills" "$TMP/skills"
+else
+  command -v tar > /dev/null 2>&1 || fail "This needs tar, and it is not installed."
+  # Downloading into a file rather than straight down a pipe: on the left of a
+  # pipe, fetch runs in a subshell, where its exit takes the subshell only and
+  # leaves the script running on with a misleading diagnosis.
+  fetch "$TARBALL" > "$TMP/repo.tar.gz" || fail "Could not download $REPO. Check the network and try again."
+  tar -xzf "$TMP/repo.tar.gz" -C "$TMP" --strip-components=1 || fail "Downloaded $REPO but could not unpack it."
+fi
+[ -d "$TMP/skills" ] || fail "Found no skills to install."
+
+# A directory counts as a skill only if it holds a SKILL.md, matching bin/.
+AVAILABLE=""
+for dir in "$TMP"/skills/*/; do
+  [ -f "$dir/SKILL.md" ] || continue
+  name="${dir%/}"
+  AVAILABLE="$AVAILABLE ${name##*/}"
+done
+AVAILABLE="${AVAILABLE# }"
 
 if [ -z "$SKILL" ]; then
   usage
   printf '\nAvailable:\n\n'
   for name in $AVAILABLE; do printf '  %s\n' "$name"; done
   printf '\n'
-  exit 1
+  exit 0
 fi
 [ -f "$TMP/skills/$SKILL/SKILL.md" ] || fail "No skill named \"$SKILL\" here. Available: $AVAILABLE"
 
@@ -108,13 +138,15 @@ if [ -z "$TARGET" ] && [ -n "$TTY" ]; then
   done
   ask '
   Number or name [1]: ' claude
-  TARGET="$ANSWER"
+  # Numbers are what the menu offers, so they are answers to it — not something
+  # --target accepts, where bin/ would reject them too.
+  case "$ANSWER" in
+    1) TARGET=claude ;; 2) TARGET=cursor ;; 3) TARGET=codex ;; 4) TARGET=copilot ;;
+    *) TARGET="$ANSWER" ;;
+  esac
 fi
 TARGET="$(printf '%s' "${TARGET:-claude}" | tr '[:upper:]' '[:lower:]')"
-case "$TARGET" in
-  1) TARGET=claude ;; 2) TARGET=cursor ;; 3) TARGET=codex ;; 4) TARGET=copilot ;;
-esac
-describe "$TARGET" || fail "Not one of the listed agents: \"$TARGET\""
+describe "$TARGET" || fail "Unknown target \"$TARGET\". Pick one of: $(printf '%s' "$NAMES" | tr ' ' ',' | sed 's/,/, /g')"
 
 if [ -z "$SPEAK" ]; then
   ask '
@@ -137,8 +169,8 @@ cp -R "$TMP/skills/$SKILL" "$DEST"
 # The skill in the repository stays English; only the installed copy is told to
 # answer in another language, so --force keeps overwriting cleanly.
 SPOKEN=""
-case "$SPEAK" in
-  [Ee]nglish|[Ee]n|EN) ;;
+case "$(printf '%s' "$SPEAK" | tr '[:upper:]' '[:lower:]')" in
+  english|en) ;;
   *) printf '\n## Language\n\nAnswer the user in %s. Commands, file paths and code stay as written.\n' \
        "$SPEAK" >> "$DEST/SKILL.md"
      SPOKEN="

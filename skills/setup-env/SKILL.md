@@ -17,7 +17,7 @@ An item that cannot be made green at all — no licence, unsupported platform, h
 
 **Setup** — "set up my environment", "what do I install", "where do I start". The full run, steps 1–6. A non-green line at the end sends you back to step 4 or 5, unless it is stuck.
 
-**Repair** — "docker isn't working", "npm is missing". Steps 2, 4 or 5, and 6, scoped to the reported tool and whatever it depends on. Ends the way setup does.
+**Repair** — "docker isn't working", "npm is missing". The full run scoped to the reported tool and whatever it depends on: step 1 for what that tool's requirement and check actually are, step 2 to see the state it is in, then 4 or 5 to close it and 6 to prove it. Ends the way setup does.
 
 When the wording admits both check and setup, start with the check: it changes nothing, costs less, and setup needs its result anyway.
 

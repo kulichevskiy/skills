@@ -75,9 +75,7 @@ Docker is missing, and nothing else is. Want me to install it?
 is yours, and I will verify the daemon afterwards by running a container.
 ```
 
-Three ways in. **Check** answers "is everything in place" and changes nothing. **Setup** walks the whole way from an empty machine. **Repair** takes one reported tool — "docker isn't working" — and closes just that. When the wording admits both check and setup, it starts with the check: that costs less, and setup needs its result anyway.
-
-What it does differently from how this usually goes on its own:
+Three ways in — **check** changes nothing, **setup** walks an empty machine the whole way, **repair** closes one reported tool. What it does differently from how this usually goes on its own:
 
 - **Measure before installing.** It establishes what is already present and installs only what is missing, rather than installing over a working setup — and it asks before replacing a tool the machine already has, because a global Node or Python serves other projects too.
 - **A check, not an exit code.** An item counts as closed only once its own check has run and the output is shown. An install returning zero proves nothing yet: `docker --version` answers even when the daemon is dead, which is why Docker is verified by running a container.
@@ -90,16 +88,22 @@ Requirements come from the project's own `PREREQUISITES.md`, `CONTRIBUTING.md` o
 
 Drop a directory into `skills/<name>/` with a `SKILL.md` inside — the installer picks it up automatically, with nothing to register. Sibling files in that directory are copied along with the skill, so reference material can live in separate files and load only for the branch that needs it.
 
-`SKILL.md` opens with YAML frontmatter, and the installer reads it as well as the agent does:
+`SKILL.md` opens with YAML frontmatter:
 
 ```yaml
 ---
-name: setup-env          # lowercase, hyphens, matches the folder name
+name: setup-env          # lowercase, hyphens, matching the folder name
 description: What it does, and the triggers that should fire it.
 ---
 ```
 
-Without `description` the skill still installs, but it lists with a blank summary and no agent will invoke it on its own.
+Agents require both. The installers read only `description`, for the listing — omit it and the skill still installs, but it lists with a blank summary and no agent invokes it on its own.
+
+There are two installers, `bin/agent-skills.mjs` and `install.sh`, because the second has to work where the first cannot run at all. They must behave identically, so change one and run the other against it:
+
+```bash
+sh test/parity.sh
+```
 
 ## License
 

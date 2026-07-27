@@ -9,7 +9,7 @@ here instead of being inferred from manifests.
 
 What has to be installed and configured on the machine before starting. macOS and Windows have their own sections; everything else is shared.
 
-You do not have to work through this by hand — ask Claude to check your environment and it will walk the same list, install what it can, tell you what only you can do, and verify the result.
+You do not have to work through this by hand — ask your coding agent to check your environment and it will walk the same list, install what it can, tell you what only you can do, and verify the result.
 
 ## 1. Accounts
 
