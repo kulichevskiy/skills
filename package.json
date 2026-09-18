@@ -14,7 +14,9 @@
     "bundles",
     "skills",
     "install.sh",
-    "README.md"
+    "README.md",
+    "docs/installation.md",
+    "CONTRIBUTING.md"
   ],
   "engines": {
     "node": ">=18"
