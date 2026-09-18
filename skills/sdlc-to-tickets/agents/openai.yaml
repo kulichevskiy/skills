@@ -1,4 +1,0 @@
-interface:
-  display_name: "sdlc-to-tickets"
-  short_description: "Plan verifiable tickets and dependencies"
-  default_prompt: "Use $sdlc-to-tickets for this project and the task I describe."

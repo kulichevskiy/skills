@@ -1,0 +1,4 @@
+interface:
+  display_name: "implement"
+  short_description: "Execute tickets with integration evidence"
+  default_prompt: "Use $implement for this project and the task I describe."

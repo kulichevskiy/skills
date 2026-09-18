@@ -1,0 +1,4 @@
+interface:
+  display_name: "setup"
+  short_description: "Connect project standards and quality gates"
+  default_prompt: "Use $setup for this project and the task I describe."

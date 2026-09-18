@@ -1,0 +1,4 @@
+interface:
+  display_name: "ui-implement"
+  short_description: "Build production screens from the shared UI Kit"
+  default_prompt: "Use $ui-implement for this project and the task I describe."

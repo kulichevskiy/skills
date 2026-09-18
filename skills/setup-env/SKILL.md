@@ -1,9 +1,9 @@
 ---
 name: setup-env
-description: Checks and sets up the environment a project needs, taking every tool to verified. Use when the user asks whether their environment is in place; is setting up a machine for a project from scratch; or reports a required tool missing or not working.
+description: Check, set up, or repair a project’s development environment and verify its required tools. Use when the user asks whether their environment is in place; is setting up a machine for a project from scratch; or reports a required tool missing or not working.
 ---
 
-# Environment setup
+# Set up the environment
 
 Every item is either **green** or it is not. Green means its own check has run and the output is shown. An install that exited 0 is not green yet — `docker --version` answers even when the daemon is dead, which is why Docker is checked by running a container.
 

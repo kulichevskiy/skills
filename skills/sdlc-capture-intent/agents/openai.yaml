@@ -1,4 +1,0 @@
-interface:
-  display_name: "sdlc-capture-intent"
-  short_description: "Clarify a task and save its intent"
-  default_prompt: "Use $sdlc-capture-intent for this project and the task I describe."

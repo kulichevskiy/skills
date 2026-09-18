@@ -1,0 +1,16 @@
+{
+  "name": "kulichevskiy-skills",
+  "owner": {
+    "name": "Alexey Kulichevskiy"
+  },
+  "plugins": [
+    {
+      "name": "sdlc",
+      "source": "./plugins/sdlc",
+      "description": "AI-assisted product development: intent, specification, implementation, review, and a shared web UI Kit."
+    }
+  ],
+  "metadata": {
+    "description": "Plugins for AI-assisted product development."
+  }
+}

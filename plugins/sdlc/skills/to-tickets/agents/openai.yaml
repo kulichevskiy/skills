@@ -1,0 +1,4 @@
+interface:
+  display_name: "to-tickets"
+  short_description: "Plan verifiable tickets and dependencies"
+  default_prompt: "Use $to-tickets for this project and the task I describe."

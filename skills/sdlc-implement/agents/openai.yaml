@@ -1,4 +1,0 @@
-interface:
-  display_name: "sdlc-implement"
-  short_description: "Execute tickets with integration evidence"
-  default_prompt: "Use $sdlc-implement for this project and the task I describe."

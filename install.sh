@@ -41,15 +41,17 @@ Skills for Claude Code, Cursor, Codex and GitHub Copilot.
   ... | sh -s -- <skill|sdlc|sdlc-ui> --global     for every project, not just this one
 
   --target=$(printf '%s' "$NAMES" | tr ' ' '|')   where to install, asked if omitted
+  --scope=<project|user>   installation scope, asked if omitted
+  --global            alias for --scope=user
   --lang=<language>   language the agent answers in, asked if omitted
   --force             overwrite an installed copy
 
-Both questions are skipped where there is no terminal to ask on, so the
-command stays usable from a script: it installs for Claude Code in English.
+Questions are skipped where there is no terminal to ask on, so the command
+stays usable from a script: it installs into this project for Claude Code in English.
 
 Bundles:
-  sdlc     — ten skills; start with sdlc-setup
-  sdlc-ui  — three standalone web UI skills; start with sdlc-ui-kit
+  sdlc     — ten skills; start with setup
+  sdlc-ui  — three standalone web UI skills; start with ui-kit
 EOF
 }
 
@@ -77,15 +79,18 @@ fetch() {
   fi
 }
 
-SKILL=""; TARGET=""; SPEAK=""; EVERYWHERE=""; FORCE=""
+SKILL=""; TARGET=""; SPEAK=""; EVERYWHERE=""; INSTALL_SCOPE=""; FORCE=""
 for arg do
   case "$arg" in
     # A flag that takes a value and was given none is a slip, not a way to ask
     # the question anyway. These must precede their =* forms to match first.
     --target|--target=) fail "--target needs a value, as --target=<agent>." ;;
     --lang|--lang=)     fail "--lang needs a value, as --lang=<language>." ;;
+    --scope|--scope=)   fail "--scope needs a value, as --scope=<project|user>." ;;
     --target=*) TARGET="${arg#--target=}" ;;
     --lang=*)   SPEAK="${arg#--lang=}" ;;
+    --scope=*)  INSTALL_SCOPE="${arg#--scope=}"
+                [ -n "$(printf '%s' "$INSTALL_SCOPE" | tr -d '[:space:]')" ] || fail '--scope needs a value.' ;;
     --global)   EVERYWHERE=1 ;;
     --force)    FORCE=1 ;;
     --help)     usage; exit 0 ;;
@@ -94,6 +99,16 @@ for arg do
                 SKILL="$arg" ;;
   esac
 done
+
+INSTALL_SCOPE="$(printf '%s' "$INSTALL_SCOPE" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+case "$INSTALL_SCOPE" in
+  ''|project|user) ;;
+  *) fail "Unknown --scope \"$INSTALL_SCOPE\". Pick project or user." ;;
+esac
+if [ -n "$EVERYWHERE" ]; then
+  [ "$INSTALL_SCOPE" != project ] || fail '--global conflicts with --scope=project.'
+  INSTALL_SCOPE=user
+fi
 
 TMP="$(mktemp -d)"
 # A bare `trap ... INT` runs the handler and then resumes where it left off, so
@@ -106,6 +121,7 @@ if [ -n "${SKILLS_SOURCE:-}" ]; then
   # Test seam, so test/parity.sh can check a working copy rather than whatever
   # is published on the branch.
   cp -R "$SKILLS_SOURCE/skills" "$TMP/skills"
+  cp -R "$SKILLS_SOURCE/plugins" "$TMP/plugins"
   cp -R "$SKILLS_SOURCE/bundles" "$TMP/bundles"
 else
   command -v tar > /dev/null 2>&1 || fail "This needs tar, and it is not installed."
@@ -115,6 +131,9 @@ else
   fetch "$TARBALL" > "$TMP/repo.tar.gz" || fail "Could not download $REPO. Check the network and try again."
   tar -xzf "$TMP/repo.tar.gz" -C "$TMP" --strip-components=1 || fail "Downloaded $REPO but could not unpack it."
 fi
+# Flatten the plugin's canonical skill sources only in this disposable tree.
+[ -d "$TMP/plugins/sdlc/skills" ] || fail "Missing SDLC plugin skills."
+cp -R "$TMP/plugins/sdlc/skills/." "$TMP/skills/"
 [ -d "$TMP/skills" ] || fail "Found no skills to install."
 [ -s "$TMP/bundles/sdlc.txt" ] || fail "Missing SDLC bundle manifest."
 SDLC="$(cat "$TMP/bundles/sdlc.txt")"
@@ -134,7 +153,7 @@ if [ -z "$SKILL" ]; then
   usage
   printf '\nStandalone skills:\n\n'
   for name in $AVAILABLE; do
-    case "$name" in sdlc-*) continue ;; esac
+    case " $(printf '%s' "$SDLC" | tr '\n' ' ') " in *" $name "*) continue ;; esac
     printf '  %s\n' "$name"
   done
   printf '\n'
@@ -158,6 +177,13 @@ for name in $SELECTED; do
   [ -f "$TMP/skills/$name/SKILL.md" ] || fail "Missing bundled skill: $name"
 done
 
+case "$SKILL" in
+  sdlc|sdlc-ui) ;;
+  *) case " $(printf '%s' "$SDLC" | tr '\n' ' ') " in
+       *" $SKILL "*) fail 'Install SDLC skills together: use sdlc, or sdlc-ui for only the UI skills.' ;;
+     esac ;;
+esac
+
 if [ -z "$TARGET" ] && [ -n "$TTY" ]; then
   printf '\n  Which agent reads these skills?\n\n' > "$TTY"
   index=1
@@ -177,6 +203,21 @@ if [ -z "$TARGET" ] && [ -n "$TTY" ]; then
 fi
 TARGET="$(printf '%s' "${TARGET:-claude}" | tr '[:upper:]' '[:lower:]')"
 describe "$TARGET" || fail "Unknown target \"$TARGET\". Pick one of: $(printf '%s' "$NAMES" | tr ' ' ',' | sed 's/,/, /g')"
+
+if [ -z "$INSTALL_SCOPE" ]; then
+  if [ -n "$TTY" ]; then
+    printf '\n  Where should these skills be installed?\n\n    1. Project (this repository)  %s/%s\n    2. User (all projects)       %s/%s\n' "$PWD" "$PROJECT" "$HOME" "$HOMEDIR" > "$TTY"
+  fi
+  ask '
+  Number or scope [1]: ' project
+  ANSWER="$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  case "$ANSWER" in
+    ''|1|project) INSTALL_SCOPE=project ;;
+    2|user) INSTALL_SCOPE=user ;;
+    *) fail "Not one of the listed scopes: \"$ANSWER\"" ;;
+  esac
+fi
+if [ "$INSTALL_SCOPE" = user ]; then EVERYWHERE=1; fi
 
 if [ -z "$SPEAK" ]; then
   ask '
@@ -214,8 +255,8 @@ done
 
 ENTRY="$SKILL"
 case "$SKILL" in
-  sdlc) ENTRY=sdlc-setup; DEST="$ROOT/$INTO" ;;
-  sdlc-ui) ENTRY=sdlc-ui-kit; DEST="$ROOT/$INTO" ;;
+  sdlc) ENTRY=setup; DEST="$ROOT/$INTO" ;;
+  sdlc-ui) ENTRY=ui-kit; DEST="$ROOT/$INTO" ;;
 esac
 if [ -n "$CALL" ]; then INVOKE="call it as $CALL$ENTRY"; else INVOKE="ask the agent to use $ENTRY"; fi
 if [ -n "$EVERYWHERE" ]; then SCOPE="in every project"; else SCOPE="in this project"; fi

@@ -1,0 +1,4 @@
+interface:
+  display_name: "code-review"
+  short_description: "Review intent, specification, and standards"
+  default_prompt: "Use $code-review for this project and the task I describe."

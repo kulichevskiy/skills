@@ -1,0 +1,4 @@
+interface:
+  display_name: "ui-kit"
+  short_description: "Create shared UI components and a live showcase"
+  default_prompt: "Use $ui-kit for this project and the task I describe."

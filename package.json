@@ -1,6 +1,6 @@
 {
   "name": "@kulichevskiy/skills",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Agent skills for Claude Code, Cursor, Codex and GitHub Copilot, installable with npx",
   "type": "module",
   "bin": {
@@ -13,6 +13,7 @@
     "bin",
     "bundles",
     "skills",
+    "plugins",
     "install.sh",
     "README.md",
     "docs/installation.md",

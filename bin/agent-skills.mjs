@@ -11,9 +11,10 @@ import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
 const SOURCE = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'skills')
+const PLUGIN_SKILLS = resolve(SOURCE, '..', 'plugins', 'sdlc', 'skills')
 const BUNDLES = new Map([
-  ['sdlc', { entry: 'sdlc-setup', summary: 'The complete ten-skill family; start with sdlc-setup.' }],
-  ['sdlc-ui', { entry: 'sdlc-ui-kit', summary: 'Three standalone web UI skills; start with sdlc-ui-kit.' }],
+  ['sdlc', { entry: 'setup', summary: 'The complete ten-skill family; start with setup.' }],
+  ['sdlc-ui', { entry: 'ui-kit', summary: 'Three standalone web UI skills; start with ui-kit.' }],
 ].map(([name, bundle]) => [name, { ...bundle,
   members: readFileSync(new URL(`../bundles/${name}.txt`, import.meta.url), 'utf8').trim().split(/\s+/),
 }]))
@@ -28,10 +29,9 @@ const TARGETS = [
 ]
 
 function available() {
-  if (!existsSync(SOURCE)) return []
-  return readdirSync(SOURCE, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && existsSync(join(SOURCE, entry.name, 'SKILL.md')))
-    .map((entry) => ({ name: entry.name, summary: summarize(join(SOURCE, entry.name, 'SKILL.md')) }))
+  return [SOURCE, PLUGIN_SKILLS].flatMap(source => existsSync(source) ? readdirSync(source, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join(source, entry.name, 'SKILL.md')))
+    .map((entry) => ({ name: entry.name, path: join(source, entry.name), summary: summarize(join(source, entry.name, 'SKILL.md')) })) : [])
 }
 
 function summarize(skillFile) {
@@ -47,15 +47,17 @@ function usage(skills) {
   console.log(`
 Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
-  npx github:kulichevskiy/skills <skill|sdlc|sdlc-ui>            into this project
+  npx github:kulichevskiy/skills <skill|sdlc|sdlc-ui>            interactive installation
   npx github:kulichevskiy/skills <skill|sdlc|sdlc-ui> --global   for every project
 
   --target=<${TARGETS.map((it) => it.name).join('|')}>   where to install, asked if omitted
+  --scope=<project|user>   installation scope, asked if omitted
+  --global            alias for --scope=user
   --lang=<language>   language the agent answers in, asked if omitted
   --force             overwrite an installed copy
 
-Both questions are skipped when the output is not a terminal, so the command
-stays usable from a script: it installs for Claude Code in English.
+Questions are skipped without terminal input and output, so the command
+stays usable from a script: it installs into this project for Claude Code in English.
 
 Available:
 
@@ -66,7 +68,7 @@ ${[...BUNDLES].map(([name, bundle]) => `  ${name}\n    ${bundle.summary}`).join(
     return
   }
   for (const skill of skills) {
-    if (skill.name.startsWith('sdlc-')) continue
+    if (BUNDLES.get('sdlc').members.includes(skill.name)) continue
     console.log(`  ${skill.name}`)
     if (skill.summary) console.log(`    ${skill.summary}`)
   }
@@ -109,6 +111,14 @@ async function askLanguage(io) {
   return io.ask('\n  Language the agent should answer you in [English]: ', 'English')
 }
 
+async function askScope(io, target) {
+  console.log(`\n  Where should these skills be installed?\n\n    1. Project (this repository)  ${join(process.cwd(), ...target.project)}\n    2. User (all projects)       ${join(homedir(), ...target.home)}`)
+  const answer = (await io.ask('\n  Number or scope [1]: ', '1')).toLowerCase()
+  if (answer === '1' || answer === 'project') return 'project'
+  if (answer === '2' || answer === 'user') return 'user'
+  fail(`Not one of the listed scopes: "${answer}"`)
+}
+
 // The skill in the repository stays English; only the installed copy is told to
 // answer in another language, so --force keeps overwriting cleanly.
 function localize(skillFile, language) {
@@ -117,7 +127,7 @@ function localize(skillFile, language) {
   return true
 }
 
-const KNOWN = ['target', 'lang', 'global', 'force', 'help']
+const KNOWN = ['target', 'scope', 'lang', 'global', 'force', 'help']
 const args = process.argv.slice(2)
 const flags = new Map()
 for (const arg of args.filter((it) => it.startsWith('--'))) {
@@ -140,7 +150,7 @@ if (!requested || flags.has('help')) {
 }
 
 const bundle = BUNDLES.get(requested)
-if (!bundle && requested.startsWith('sdlc-')) fail('Install SDLC skills together: use sdlc, or sdlc-ui for only the UI skills.')
+if (!bundle && (requested.startsWith('sdlc-') || BUNDLES.get('sdlc').members.includes(requested))) fail('Install SDLC skills together: use sdlc, or sdlc-ui for only the UI skills.')
 const selected = bundle ? bundle.members : [requested]
 if (!bundle && !skills.some((it) => it.name === requested)) {
   fail(`No skill named "${requested}" here. Available: ${skills.map((it) => it.name).join(', ') || '(none)'}`)
@@ -166,11 +176,18 @@ if (named && !TARGETS.some((it) => it.name === named.toLowerCase())) {
 }
 let target = named ? TARGETS.find((it) => it.name === named.toLowerCase()) : null
 let language = valued('lang')
+let installScope = valued('scope')?.toLowerCase()
+if (installScope && !['project', 'user'].includes(installScope)) fail(`Unknown --scope "${installScope}". Pick project or user.`)
+if (flags.has('global')) {
+  if (installScope === 'project') fail('--global conflicts with --scope=project.')
+  installScope = 'user'
+}
 
-if ((!target || !language) && process.stdin.isTTY && process.stdout.isTTY) {
+if ((!target || !installScope || !language) && process.stdin.isTTY && process.stdout.isTTY) {
   const io = reader()
   try {
     target ??= await askTarget(io)
+    installScope ??= await askScope(io, target)
     language ??= await askLanguage(io)
   } finally {
     io.close()
@@ -178,8 +195,9 @@ if ((!target || !language) && process.stdin.isTTY && process.stdout.isTTY) {
 }
 target ??= TARGETS[0]
 language ??= 'English'
+installScope ??= 'project'
 
-const everywhere = flags.has('global')
+const everywhere = installScope === 'user'
 const directory = join(everywhere ? homedir() : process.cwd(), ...(everywhere ? target.home : target.project))
 // Check every destination before writing any member of a bundle. lstat also
 // detects dangling symlinks, which must not be silently replaced.
@@ -196,7 +214,7 @@ mkdirSync(directory, { recursive: true })
 for (const name of selected) {
   const destination = join(directory, name)
   rmSync(destination, { recursive: true, force: true })
-  cpSync(join(SOURCE, name), destination, { recursive: true })
+  cpSync(skills.find(skill => skill.name === name).path, destination, { recursive: true })
   localize(join(destination, 'SKILL.md'), language)
 }
 const destination = bundle ? directory : join(directory, requested)

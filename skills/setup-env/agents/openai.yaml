@@ -1,0 +1,4 @@
+interface:
+  display_name: "setup-env"
+  short_description: "Check, set up, and verify development tools"
+  default_prompt: "Use $setup-env for this project and the task I describe."

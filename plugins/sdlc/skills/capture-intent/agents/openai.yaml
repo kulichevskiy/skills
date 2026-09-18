@@ -1,0 +1,4 @@
+interface:
+  display_name: "capture-intent"
+  short_description: "Clarify a task and save its intent"
+  default_prompt: "Use $capture-intent for this project and the task I describe."

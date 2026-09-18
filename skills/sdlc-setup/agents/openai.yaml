@@ -1,4 +1,0 @@
-interface:
-  display_name: "sdlc-setup"
-  short_description: "Connect project standards and quality gates"
-  default_prompt: "Use $sdlc-setup for this project and the task I describe."

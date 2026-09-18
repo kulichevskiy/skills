@@ -1,67 +1,118 @@
-# Install the SDLC skills
+# Install SDLC
 
-Choose `sdlc` for all ten skills (seven core plus three UI skills), or `sdlc-ui` for only the three web UI skills. Both bundles include their shared resources. Use Node, shell, or manual installation below. Start the core workflow with `sdlc-setup`, or standalone UI work with `sdlc-ui-kit`. See the [quick start](../README.md#get-started).
+Install the `sdlc` plugin through an agent's plugin manager, or copy its skills with npx or the shell installer. The plugin contains all ten SDLC skills. The file installers also offer `sdlc-ui` for just `ui-kit`, `ui-implement`, and `ui-review`.
+
+## Native plugin
+
+### Claude Code
+
+```bash
+claude plugin marketplace add kulichevskiy/skills
+claude plugin install sdlc@kulichevskiy-skills --scope project
+```
+
+Use `--scope user` to install across projects. Start with `/sdlc:setup`, or `/sdlc:ui-kit` for UI work. See the [Claude plugin reference](https://code.claude.com/docs/en/plugins-reference).
+
+### Codex
+
+```bash
+codex plugin marketplace add kulichevskiy/skills
+codex plugin add sdlc@kulichevskiy-skills
+```
+
+Select `setup` or `ui-kit` from the SDLC plugin.
+
+For a project-local plugin, copy `plugins/sdlc` into your repository, register it in `.agents/plugins/marketplace.json`, and enable it in `.codex/config.toml`. The [Codex local-plugin guide](https://developers.openai.com/plugins/build/plugins#install-a-local-plugin-manually) describes the configuration. The npx and shell routes below provide a project/user choice for skill files.
+
+Set the response language in your agent or project instructions when using a native plugin.
+
+### Cursor and GitHub Copilot
+
+Use the file installer below with `--target=cursor` or `--target=copilot`.
 
 ## With Node
 
-Requires Node 18 or newer. Run from the project where you want to use the skills:
+Requires Node 18 or newer. Run from your project:
 
 ```bash
-npx github:kulichevskiy/skills sdlc                 # all ten SDLC skills, into this project
-npx github:kulichevskiy/skills sdlc-ui              # only the three web UI skills
-npx github:kulichevskiy/skills sdlc --global        # for every project on this machine
-npx github:kulichevskiy/skills                      # see what is available
+npx github:kulichevskiy/skills sdlc
 ```
+
+The installer asks for the agent, installation scope, and response language. Choose `project` for the current repository or `user` for all your projects. The menu shows both destination paths.
+
+To choose without prompts:
+
+```bash
+npx github:kulichevskiy/skills sdlc --target=codex --scope=project --lang=English
+```
+
+Replace `sdlc` with `sdlc-ui` for the three UI skills. Run without a skill name to list available bundles and standalone skills.
 
 ## Without Node
 
-Use the shell installer on a machine with `sh`, `curl`, and `tar`:
+Requires `sh`, `curl`, and `tar`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/kulichevskiy/skills/main/install.sh | sh -s -- sdlc
 ```
 
-Replace `sdlc` with `sdlc-ui` to install only the UI bundle. The `-s --` matters: it hands what follows to the script rather than to `sh`. Add `--global` after the skill name the same way. It is one file of shell, [`install.sh`](../install.sh), if you would rather read it before piping it anywhere.
-
-On Windows, use either route from inside WSL. PowerShell has no `sh`, so the second one does not work there.
-
-## Agent, scope, and language
-
-Both installers ask two questions: which agent reads the skill, and which language it should answer you in. Pass `--target` and `--lang` to answer them up front. Both are skipped where there is no terminal to ask on, so either command stays usable from a script, where it installs for Claude Code in English.
+The shell installer accepts the same options:
 
 ```bash
-npx github:kulichevskiy/skills sdlc --target=cursor --lang=Russian
+curl -fsSL https://raw.githubusercontent.com/kulichevskiy/skills/main/install.sh | sh -s -- sdlc --target=codex --scope=user --lang=English
 ```
 
-| `--target` | In the project | With `--global` |
+On Windows, run these commands in WSL.
+
+## Options and locations
+
+| Option | Values | Default without a terminal |
+|---|---|---|
+| `--target` | `claude`, `codex`, `cursor`, `copilot` | `claude` |
+| `--scope` | `project`, `user` | `project` |
+| `--lang` | Response language, such as `English` or `Russian` | `English` |
+| `--global` | Alias for `--scope=user` | |
+| `--force` | Replace existing destination skills | |
+
+Press Enter at a prompt to accept its default. `--global` and `--scope=project` conflict.
+
+| Target | Project directory | User directory |
 |---|---|---|
 | `claude` | `.claude/skills/` | `~/.claude/skills/` |
 | `cursor` | `.cursor/skills/` | `~/.cursor/skills/` |
 | `codex` | `.agents/skills/` | `~/.agents/skills/` |
 | `copilot` | `.github/skills/` | `~/.copilot/skills/` |
 
-Paths follow the official [Claude Code](https://code.claude.com/docs/en/skills), [Codex](https://learn.chatgpt.com/docs/build-skills), [Cursor](https://cursor.com/docs/skills), and [Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) documentation. These commands install local skill folders; for cloud agents, commit project skills to the repository or use the host's distribution mechanism. If skills do not appear, restart the agent.
+Commit project skills to share them with your team. Restart the agent if newly installed skills do not appear.
 
-The Codex target now uses `.agents/skills/`. Existing copies installed by older versions into `.codex/skills/` are not moved or removed; compare any local edits and remove obsolete duplicates yourself after verifying the new installation.
+`--lang` adds a response-language instruction to the installed files. Skill names, descriptions, and titles stay in English.
 
-Project or global is a question of who needs the skill. Into the project if it is part of that repository's process and should travel with it in git. Global if it is your own tool and you would rather not carry it from repo to repo.
+## Update or remove
 
-## Updates and removal
+For native plugins, use the agent's plugin manager.
 
-Both routes install from GitHub. Run the same command again with `--force` to replace installed copies, including removal of stale files. For either bundle, every member is checked for conflicts before any is written; without `--force`, one existing member stops the whole installation. Unrelated skills are preserved. To uninstall, delete only the skill directories listed in the selected bundle manifest from the chosen location; project artifacts remain in place. The bundles overlap: removing the UI directories also removes UI capabilities from a full SDLC installation. Installing one bundle over overlapping installed members needs `--force`; updating `sdlc-ui` preserves the installed core skills.
+For skill files, repeat the install command with `--force`. This replaces each selected skill directory, including local edits, and removes stale files. Without `--force`, an existing destination stops the installation before any bundle member changes.
 
-Only the installed copy is told which language to answer in; the skill in this repository stays English, so `--force` keeps overwriting cleanly.
+To uninstall skill files, delete the directories listed in [bundles/sdlc.txt](../bundles/sdlc.txt) or [bundles/sdlc-ui.txt](../bundles/sdlc-ui.txt) from the chosen installation directory. Both bundles use the same UI skill directories.
+
+## Migrate from prefixed names
+
+Install the new plugin or short-named files, compare any local edits, then remove the old `sdlc-*` skill directories. Check `.codex/skills/` as well if you used an older Codex installer. Keep one installation of each skill to avoid duplicate entries.
+
+File installations use names such as `setup`, `implement`, and `code-review`. If another installed skill has the same name, choose the native plugin or resolve the conflict before installing. The native plugin uses the `sdlc` namespace. Existing project documents keep their paths.
 
 ## Manual installation
 
-Clone or download this repository, then copy the directories listed in [bundles/sdlc.txt](../bundles/sdlc.txt) or [bundles/sdlc-ui.txt](../bundles/sdlc-ui.txt) side by side into the appropriate location from the table. Include each directory's `agents/` and `references/` contents. For a fresh Claude Code project installation, run from your project:
+Copy the directories listed in [bundles/sdlc.txt](../bundles/sdlc.txt) from `plugins/sdlc/skills/` into the destination from the table above. Include each skill's `agents/` and reference files. For UI only, use [bundles/sdlc-ui.txt](../bundles/sdlc-ui.txt).
+
+Keep each bundle's skills together so their relative references resolve. For updates, use an installer with `--force` to remove stale files.
+
+## Install from a local checkout
+
+Run the file installer from the target project:
 
 ```bash
-git clone https://github.com/kulichevskiy/skills.git /tmp/agent-skills
-mkdir -p .claude/skills
-while IFS= read -r skill; do
-  cp -R "/tmp/agent-skills/skills/$skill" .claude/skills/
-done < /tmp/agent-skills/bundles/sdlc.txt
+node /path/to/skills/bin/agent-skills.mjs sdlc --target=codex --scope=project --lang=English
 ```
 
-For UI only, use `bundles/sdlc-ui.txt` in the final line. Use an unused clone destination. For updates to existing copies, use an installer with `--force` so removed files do not linger. The install names `sdlc` and `sdlc-ui` are bundles, not additional skills. Individual SDLC installation through these installers is rejected because the skills share references and call one another. The UI bundle is self-contained and needs no core skill directories; independent invocation does not require installing skills one at a time. `setup-env` remains independently installable.
+For native plugins, replace `kulichevskiy/skills` in the marketplace command with the absolute path to the checkout. Then run the same plugin install command.

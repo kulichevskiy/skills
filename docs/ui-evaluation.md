@@ -1,23 +1,29 @@
 # Evaluate the UI skills
 
-Installer tests (`npm test`) prove distribution and replacement behavior. They do not prove that an agent follows an interview or reviews a rendered screen correctly. Use isolated disposable projects for these behavioral checks; never point an evaluation at a live product or personal installed skills.
+Use temporary projects to test how the UI skills interview users, build components, and review screens.
 
-Install `sdlc-ui` from the candidate checkout into each fixture, using its Node installer and an explicit target/language. Give the evaluating agent the task, installed skill path, and raw project artifacts. Keep the expectations below with the evaluator, not in the agent's task prompt. Answer interview questions as a simulated user and save those answers with the evaluation results. Do not pre-approve a component extension just to avoid testing the decision.
+Install `sdlc-ui` from the local checkout into each test project. Set the target, scope, and response language explicitly. Give the agent the task, installed skill path, and project files. Keep the expected results below in the evaluator's notes.
+
+Answer interview questions as the test user and save those answers. Let the agent ask about a missing component before approving an extension.
 
 ## Scenarios
 
-| Raw task and fixture | Observe |
-| --- | --- |
-| Empty native web project; create a kit for signup | Focused interview; limited foundations and form components; common source implementations; runnable in-project showcase; truthful check status |
-| A themed new-product brief; create a kit for its first scenario | Technical reference remains primary: six semantic color roles, dedicated type specifications, actual sizing/spacing scale, and desktop/mobile layout examples precede scoped components. No promotional page substitutes for the kit. Verify rendered values against shared sources. |
-| Existing React product with several button variants; adopt a kit | Source and product discovery before canonical selection; real React components in gallery/product; no unrequested mass migration |
-| Build a screen from a small adopted kit; request an absent variant | Question before introducing the variant; after approval update shared source, gallery, catalog, revision, and checks, then resume the screen |
-| Review a page with a cloned component, a local override, and an unsupported variant | Findings cite kit rules and concrete source/render evidence |
-| Review a legitimate composition of approved components | No requirement to register ordinary screen markup as a new kit component |
-| Review a visual choice absent from adopted rules | Report a kit gap, not an invented violation |
-| Repeat review with browser unavailable | Retain useful source findings but report incomplete coverage, without a full conformity verdict |
-| Run with/without an existing SDLC profile | Honor present policy and decisions; no mandatory full SDLC setup when absent |
+| Task and project | Expected behavior |
+|---|---|
+| Create a signup kit in an empty web project | Interview the user, create the needed components, and provide a working reference page using those components |
+| Create a kit for a themed product's first scenario | Document six semantic color roles, typography, sizing, spacing, and desktop/mobile layouts before component examples. Display values from the shared sources |
+| Adopt a kit in a React product with several button variants | Inspect existing code and screens, then ask which variants to adopt |
+| Build a screen that needs a missing component variant | Discuss the variant, update the kit after agreement, and resume the screen |
+| Review a cloned component, a local override, and an unsupported variant | Cite the kit rules and the code or rendered behavior that conflicts with them |
+| Review a screen composed from approved components | Accept the composition without requiring a new kit component for ordinary page markup |
+| Review a visual choice that the kit leaves undefined | Report the missing rule and ask how to resolve it |
+| Review with the browser unavailable | Report source findings and identify the screens and states still to check |
+| Run with and without an SDLC project profile | Follow an existing profile and allow independent UI work when there is none |
 
-Use at least one real rendered review when tools permit. Record exact states/viewports checked; an HTTP response or parsed DOM alone is not visual evidence. Check file hashes before/after review: only report/evidence files may change. A source-only evaluation is useful but must not be reported as browser validation.
+## Record results
 
-For every run record the skill source snapshot, fixture, user task/answers, observed actions, generated artifacts, commands/results, and unavailable checks. Independent evaluations should see raw inputs rather than the author’s expected findings. If delegation is unavailable, disclose the limitation. Verify outputs and make narrow fixes supported by observed failures; rerun affected cases after changes. Do not infer support for every web stack from a single successful example.
+Include a browser review when testing rendered behavior. Record the screens, states, and viewport sizes inspected. Compare product and kit file hashes before and after review to verify that the skill changed only its report and evidence files.
+
+Save the skill revision, test project, user task and answers, agent actions, generated files, commands, and results. Record source inspection and browser checks separately.
+
+For an independent evaluation, give another agent the original inputs and let it reach its own findings. Record who performed the evaluation. Fix demonstrated failures and rerun the affected scenarios.

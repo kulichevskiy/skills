@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const uiMembers = ['sdlc-ui-kit', 'sdlc-ui-implement', 'sdlc-ui-review']
-const members = ['sdlc-setup', 'sdlc-capture-intent', 'sdlc-to-spec', 'sdlc-to-tickets', 'sdlc-implement', 'sdlc-code-review', 'sdlc-babysit', ...uiMembers]
+const uiMembers = ['ui-kit', 'ui-implement', 'ui-review']
+const members = ['setup', 'capture-intent', 'to-spec', 'to-tickets', 'implement', 'code-review', 'babysit', ...uiMembers]
 const bundles = { sdlc: members, 'sdlc-ui': uiMembers }
 const targets = {
   claude: ['.claude/skills', '.claude/skills'],
@@ -50,7 +50,7 @@ function files(directory) {
 function verifyBundle(directory, language = 'English', expected = members) {
   assert.deepEqual(readdirSync(directory).sort(), [...expected].sort())
   for (const name of expected) {
-    const source = join(root, 'skills', name)
+    const source = join(root, 'plugins/sdlc/skills', name)
     const destination = join(directory, name)
     assert.deepEqual(
       files(destination).map(path => path.slice(destination.length + 1)).sort(),
@@ -76,7 +76,7 @@ function verifyBundle(directory, language = 'English', expected = members) {
 
 for (const kind of ['node', 'shell']) {
   for (const [bundle, selectedMembers] of Object.entries(bundles)) {
-    const entry = bundle === 'sdlc' ? 'sdlc-setup' : 'sdlc-ui-kit'
+    const entry = bundle === 'sdlc' ? 'setup' : 'ui-kit'
     const lastMember = selectedMembers.at(-1)
     for (const [target, directories] of Object.entries(targets)) {
       for (const global of [false, true]) {
@@ -109,9 +109,12 @@ for (const kind of ['node', 'shell']) {
     test(`${kind}/${bundle}: reject invalid requests without writes`, t => {
       const box = sandbox(t)
       for (const args of [
-        ['sdlc-implement'], ['sdlc-setup'], ['sdlc-ui-kit'], ['sdlc-ui-implement'], ['sdlc-ui-review'], ['sdlc-unknown'], ['../skills/setup-env'], ['missing'],
+        ['implement'], ['setup'], ['ui-kit'], ['ui-implement'], ['ui-review'], ['sdlc-unknown'], ['../skills/setup-env'], ['missing'],
         [bundle, 'setup-env'], [bundle, '--target=vim'], [bundle, '--target'],
         [bundle, '--lang='], [bundle, '--force=false'], [bundle, '--global=false'],
+        [bundle, '--scope'], [bundle, '--scope='], [bundle, '--scope=  '], [bundle, '--scope=machine'],
+        [bundle, '--global', '--scope=project'], [bundle, '--scope=project', '--global'],
+        ['sdlc-setup'], ['sdlc-ui-kit'],
       ]) {
         const result = run(kind, box, args)
         assert.ifError(result.error)
@@ -162,8 +165,8 @@ for (const kind of ['node', 'shell']) {
     test(`${kind}/${bundle}: missing source member prevents partial installation`, t => {
       const box = sandbox(t)
       const source = join(box, 'source')
-      for (const entry of ['bin', 'bundles', 'skills', 'install.sh']) cpSync(join(root, entry), join(source, entry), { recursive: true })
-      rmSync(join(source, 'skills', lastMember), { recursive: true })
+      for (const entry of ['bin', 'bundles', 'skills', 'plugins', 'install.sh']) cpSync(join(root, entry), join(source, entry), { recursive: true })
+      rmSync(join(source, 'plugins/sdlc/skills', lastMember), { recursive: true })
       assert.notEqual(run(kind, box, [bundle], source).status, 0)
       assert.ok(!existsSync(join(box, '.claude')))
     })
@@ -208,7 +211,9 @@ for (const [bundle, selectedMembers] of Object.entries(bundles)) {
     assert.ok(contents.includes('docs/installation.md'))
     assert.ok(!contents.some(path => path.startsWith('docs/feat-')))
     assert.ok(contents.includes('install.sh'))
-    for (const member of members) assert.ok(contents.includes(`skills/${member}/SKILL.md`))
+    for (const member of members) assert.ok(contents.includes(`plugins/sdlc/skills/${member}/SKILL.md`))
+    for (const host of ['codex', 'claude', 'cursor']) assert.ok(contents.includes(`plugins/sdlc/.${host}-plugin/plugin.json`))
+    assert.ok(!contents.some(path => /^skills\/sdlc-/.test(path)))
     assert.ok(!contents.some(path => path.startsWith('test/') || path.startsWith('.git/')))
 
     const installed = spawnSync('npm', ['exec', '--offline', '--yes', '--cache', cache, '--package', archive,
@@ -235,12 +240,44 @@ for (const [bundle, selectedMembers] of Object.entries(bundles)) {
 
 }
 
+test('native catalogs point to one self-contained SDLC plugin', () => {
+  const plugin = join(root, 'plugins/sdlc')
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+  assert.deepEqual(readdirSync(join(plugin, 'skills')).sort(), [...members].sort())
+  for (const host of ['codex', 'claude', 'cursor']) {
+    const manifest = JSON.parse(readFileSync(join(plugin, `.${host}-plugin/plugin.json`), 'utf8'))
+    assert.equal(manifest.name, 'sdlc')
+    assert.equal(manifest.version, pkg.version)
+    const catalogFile = host === 'codex' ? '.agents/plugins/marketplace.json' : `.${host}-plugin/marketplace.json`
+    const catalog = JSON.parse(readFileSync(join(root, catalogFile), 'utf8'))
+    assert.equal(catalog.name, 'kulichevskiy-skills')
+    assert.equal(catalog.plugins.length, 1)
+    const entry = catalog.plugins[0]
+    assert.equal(entry.name, manifest.name)
+    assert.equal(resolve(root, host === 'codex' ? entry.source.path : entry.source), plugin)
+  }
+  for (const member of members) {
+    const file = join(plugin, 'skills', member, 'SKILL.md')
+    const skill = readFileSync(file, 'utf8')
+    assert.match(skill, new RegExp(`^---\\nname: ${member}\\n`))
+    for (const path of files(dirname(file))) {
+      if (!path.endsWith('.md')) continue
+      for (const [, link] of readFileSync(path, 'utf8').matchAll(/\]\(([^)]+)\)/g)) {
+        if (/^(?:https?:|#)/.test(link)) continue
+        const linked = resolve(dirname(path), link)
+        assert.ok(linked.startsWith(plugin + '/'), `Link escapes installed plugin: ${link}`)
+        assert.ok(existsSync(linked), `Missing plugin resource: ${link}`)
+      }
+    }
+  }
+})
+
 for (const kind of ['node', 'shell']) {
   test(`${kind}: UI-only update preserves core skills and product kit`, t => {
     const box = sandbox(t)
     success(run(kind, box, ['sdlc']))
     const directory = join(box, '.claude/skills')
-    const corePath = join(directory, 'sdlc-setup/SKILL.md')
+    const corePath = join(directory, 'setup/SKILL.md')
     writeFileSync(corePath, 'custom core instruction')
     mkdirSync(join(box, 'docs/ui-kit'), { recursive: true })
     writeFileSync(join(box, 'docs/ui-kit/index.md'), 'product kit')
@@ -250,7 +287,7 @@ for (const kind of ['node', 'shell']) {
     assert.equal(readFileSync(join(box, 'docs/ui-kit/index.md'), 'utf8'), 'product kit')
     assert.deepEqual(readdirSync(directory).sort(), [...members].sort())
     for (const name of uiMembers) {
-      assert.equal(readFileSync(join(directory, name, 'SKILL.md'), 'utf8'), readFileSync(join(root, 'skills', name, 'SKILL.md'), 'utf8'))
+      assert.equal(readFileSync(join(directory, name, 'SKILL.md'), 'utf8'), readFileSync(join(root, 'plugins/sdlc/skills', name, 'SKILL.md'), 'utf8'))
     }
   })
   test(`${kind}: expanding UI-only installation requires force before any write`, t => {
@@ -262,4 +299,58 @@ for (const kind of ['node', 'shell']) {
     success(run(kind, box, ['sdlc', '--force']))
     verifyBundle(directory)
   })
+}
+
+for (const kind of ['node', 'shell']) {
+  for (const [target, directories] of Object.entries(targets)) {
+    for (const scope of ['project', 'user']) {
+      test(`${kind}: explicit ${scope} scope for ${target}`, t => {
+        const box = sandbox(t)
+        success(run(kind, box, ['sdlc-ui', `--target=${target}`, `--scope=${scope}`, '--lang=English']))
+        verifyBundle(join(box, scope === 'user' ? 'home' : '', directories[Number(scope === 'user')]), 'English', uiMembers)
+        assert.ok(!existsSync(join(box, scope === 'user' ? directories[0] : `home/${directories[1]}`)))
+      })
+    }
+  }
+  const scenarios = [
+    { name: 'all prompts', args: ['sdlc-ui'], steps: [['Number or name', '4'], ['Number or scope', '2'], ['Language the agent', 'Russian']], scope: 'user', target: 'copilot', language: 'Russian' },
+    { name: 'project default', args: ['sdlc-ui', '--target=codex', '--lang=English'], steps: [['Number or scope', '']], scope: 'project', target: 'codex' },
+    { name: 'user by name', args: ['sdlc-ui', '--target=cursor', '--lang=English'], steps: [['Number or scope', 'user']], scope: 'user', target: 'cursor' },
+    { name: 'EOF defaults', args: ['sdlc-ui'], steps: [['Number or name', null]], scope: 'project', target: 'claude' },
+    { name: 'explicit scope skips prompt', args: ['sdlc-ui', '--target=codex', '--scope=project', '--lang=English'], steps: [], scope: 'project', target: 'codex', skipScope: true },
+    { name: 'global skips prompt', args: ['sdlc-ui', '--target=copilot', '--global', '--lang=English'], steps: [], scope: 'user', target: 'copilot', skipScope: true },
+    { name: 'invalid choice writes nothing', args: ['sdlc-ui', '--target=codex', '--lang=English'], steps: [['Number or scope', 'machine']], invalid: true },
+  ]
+  if (kind === 'shell') scenarios.push({ name: 'piped script uses controlling terminal', args: [], pipe: true, steps: [['Number or scope', 'user']], scope: 'user', target: 'copilot' })
+  for (const scenario of scenarios) {
+    test(`${kind}: terminal ${scenario.name}`, t => {
+      const python = spawnSync('python3', ['-c', 'import pty'])
+      if (python.error?.code === 'ENOENT') return t.skip('Python 3 is needed for real PTY tests')
+      success(python)
+      const box = sandbox(t)
+      const script = join(root, kind === 'node' ? 'bin/agent-skills.mjs' : 'install.sh')
+      const command = scenario.pipe ? ['sh', '-c', 'cat "$1" | sh -s -- sdlc-ui --target=copilot --lang=English', 'sh', script]
+        : [kind === 'node' ? process.execPath : 'sh', script, ...scenario.args]
+      const result = spawnSync('python3', [join(root, 'test/interactive.py'), JSON.stringify(command), JSON.stringify(scenario.steps)], {
+        cwd: box, env: { ...process.env, HOME: join(box, 'home'), SKILLS_SOURCE: root }, encoding: 'utf8', timeout: 20000,
+      })
+      if (scenario.invalid) {
+        assert.ifError(result.error)
+        assert.notEqual(result.status, 0)
+        assert.match(result.stdout, /Not one of the listed scopes/)
+        assert.deepEqual(readdirSync(box), ['home'])
+      } else {
+        success(result)
+        const dirs = targets[scenario.target]
+        const user = scenario.scope === 'user'
+        verifyBundle(join(box, user ? 'home' : '', dirs[Number(user)]), scenario.language || 'English', uiMembers)
+        assert.ok(!existsSync(join(box, user ? dirs[0] : `home/${dirs[1]}`)))
+        if (scenario.skipScope) assert.doesNotMatch(result.stdout, /Where should these skills/)
+        else if (scenario.steps.some(([prompt]) => prompt === 'Number or scope')) {
+          assert.ok(result.stdout.includes(join(box, dirs[0])))
+          assert.ok(result.stdout.includes(join(box, 'home', dirs[1])))
+        }
+      }
+    })
+  }
 }
