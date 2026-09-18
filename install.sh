@@ -17,8 +17,9 @@ fail() { printf '\n  %s\n\n' "$1" >&2; exit 1; }
 
 # The device node exists even where there is no controlling terminal behind it,
 # so opening it is the only honest test — a permission check passes and the
-# first read then dies with ENXIO.
-if { : < /dev/tty; } 2>/dev/null; then TTY=/dev/tty; else TTY=""; fi
+# first read then dies with ENXIO. Probe in a subshell: POSIX shells such as
+# dash exit on a special builtin's redirection failure even inside an if.
+if ( : < /dev/tty ) 2>/dev/null; then TTY=/dev/tty; else TTY=""; fi
 
 # One target, four facts about it. Sets LABEL, PROJECT, HOMEDIR and CALL.
 describe() {

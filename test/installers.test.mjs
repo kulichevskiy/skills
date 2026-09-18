@@ -173,6 +173,19 @@ test('existing single-skill installer parity', () => {
   assert.match(result.stdout, /17 cases, 0 differing/)
 })
 
+test('POSIX dash installs without a controlling terminal', t => {
+  const available = spawnSync('dash', ['-c', 'exit 0'])
+  if (available.error?.code === 'ENOENT') return t.skip('dash is not installed')
+  success(available)
+  const box = sandbox(t)
+  const result = spawnSync('dash', [join(root, 'install.sh'), 'sdlc', '--target=claude', '--lang=English'], {
+    cwd: box, env: { ...process.env, SKILLS_SOURCE: root },
+    encoding: 'utf8', input: '', detached: true, timeout: 15000,
+  })
+  success(result)
+  verifyBundle(join(box, '.claude/skills'))
+})
+
 test('npm package installs via npm exec and the shell archive route', t => {
   const box = sandbox(t)
   const cache = join(box, 'cache')
