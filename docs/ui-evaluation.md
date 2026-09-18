@@ -9,6 +9,7 @@ Install `sdlc-ui` from the candidate checkout into each fixture, using its Node 
 | Raw task and fixture | Observe |
 | --- | --- |
 | Empty native web project; create a kit for signup | Focused interview; limited foundations and form components; common source implementations; runnable in-project showcase; truthful check status |
+| A themed new-product brief; create a kit for its first scenario | Technical reference remains primary: six semantic color roles, dedicated type specifications, actual sizing/spacing scale, and desktop/mobile layout examples precede scoped components. No promotional page substitutes for the kit. Verify rendered values against shared sources. |
 | Existing React product with several button variants; adopt a kit | Source and product discovery before canonical selection; real React components in gallery/product; no unrequested mass migration |
 | Build a screen from a small adopted kit; request an absent variant | Question before introducing the variant; after approval update shared source, gallery, catalog, revision, and checks, then resume the screen |
 | Review a page with a cloned component, a local override, and an unsupported variant | Findings cite kit rules and concrete source/render evidence |

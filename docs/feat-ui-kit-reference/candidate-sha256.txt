@@ -1,0 +1,4 @@
+3f076acc0272e4a2cfe6180088eeb12a3795f05223ca19fb61c661ca91232230  skills/sdlc-ui-kit/SKILL.md
+ea2d217bd1246f57aabcc889a973b819456e71056bfd4caf46defb00a5928475  skills/sdlc-ui-kit/references/showcase.md
+9bb496929ee0ba62548ee60f5b01c78da859ee4a261a225417e566de7e67a0d0  skills/sdlc-ui-kit/references/kit-docs.md
+87ae860bef20bd309a326f9603ae98c487d5b78227dbd51ca5d291052621e746  docs/ui-evaluation.md

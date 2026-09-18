@@ -2,6 +2,8 @@
 
 Adapt existing documentation before creating this default layout. Markdown is an index of accepted decisions and real source files, not a second implementation. Use relative links where practical and stable rule/component IDs.
 
+The visual page follows the [technical showcase contract](showcase.md). Keep Colors, Typography, Sizing & spacing, Layout, and Components directly discoverable in the rendered reference. Link each documentation section to its corresponding showcase section and canonical source; documentation alone does not replace the rendered specimens.
+
 ## docs/ui-kit/index.md
 
 Record:
@@ -16,6 +18,8 @@ Record:
 ## docs/ui-kit/rules.md
 
 Give each adopted rule a stable ID, statement, scope, and source/example pointer. Cover the agreed foundations: colors, typography, sizes, spacing, grid, icons, composition, responsive behavior, and relevant interaction/accessibility rules. Link to actual token definitions rather than duplicating their values as another source of truth.
+
+Map `primary`, `secondary`, `neutral`, `success`, `warning`, and `error` to source tokens and intended use. Record typography role definitions, the actual spacing/sizing scale, and desktop/mobile layout rules with concrete units and transition thresholds. If a value is unsettled, label it as a gap. The visual page may display values derived from canonical sources; avoid a second manually maintained token registry in documentation.
 
 Example shape (replace with project decisions, not prescribed values):
 
