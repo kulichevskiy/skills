@@ -1,0 +1,4 @@
+interface:
+  display_name: "sdlc-ui-kit"
+  short_description: "Create shared UI components and a live showcase"
+  default_prompt: "Use $sdlc-ui-kit for this project and the UI task I describe."

@@ -1,6 +1,6 @@
 # SDLC for AI-assisted product development
 
-A set of agent skills for organizing AI-assisted product development, from clarifying an idea and designing a solution to implementation, review, and a verified pull request. The seven skills give your coding agent a shared process, with decisions and progress saved in your repository so work can continue across sessions and agents.
+A set of agent skills for organizing AI-assisted product development, from clarifying an idea and designing a solution to implementation, review, and a verified pull request. The ten skills cover the core development workflow and web UI work, giving your coding agent a shared process, with decisions and progress saved in your repository so work can continue across sessions and agents.
 
 Works with **Claude Code, Codex, Cursor, and GitHub Copilot**.
 
@@ -24,7 +24,7 @@ Requires Node 18+. For installation without Node, manual copying, updates, and e
 
 ## Get started
 
-**First, configure your project with `sdlc-setup`.** Open the project in your agent and invoke:
+**For the core development workflow, first configure your project with `sdlc-setup`.** Open the project in your agent and invoke:
 
 | Agent | Command or prompt |
 |---|---|
@@ -44,11 +44,11 @@ Let customers export their order history as a CSV file.
 
 The agent helps clarify who needs it, what should happen, and how you will know it works. It saves the agreed intent before you move on to designing and building the solution.
 
-If you start with another SDLC skill before setup is ready, it first takes you through setup, then returns to your task.
+If you start with another core SDLC skill before setup is ready, it first takes you through setup, then returns to your task. For standalone UI work, start directly with `sdlc-ui-kit` as described below; the full SDLC chain is not required.
 
 ## How it works
 
-Each skill handles a stage of the software development lifecycle (SDLC). You agree on the problem and solution before implementation; later stages use those decisions to guide the work and assess the result.
+The seven core skills handle stages of the software development lifecycle (SDLC). You agree on the problem and solution before implementation; later stages use those decisions to guide the work and assess the result.
 
 | Skill | When to use it | What it produces |
 |---|---|---|
@@ -65,6 +65,26 @@ By default, a change's documents live together in `docs/feat-{slug}/`. The inten
 You choose the stage and scope of work. For example, ask `sdlc-implement` to complete one ticket or an entire accepted plan. The skills retain decisions you've already approved, and publishing or merging follows the authorization you give for that task.
 
 The same skills work across the supported agents. Where subagents are unavailable or disallowed, work runs sequentially and reviews disclose their limited independence.
+
+## Build web UI with a shared UI Kit
+
+The SDLC family also includes three skills for keeping production screens consistent. They use the project's stack and the same shared components in the product and its visual showcase.
+
+| Skill | When to use it | What it produces |
+|---|---|---|
+| [sdlc-ui-kit](skills/sdlc-ui-kit/SKILL.md) | Create or extend a kit through an interview; inspect an existing product first | Shared foundations/components, a showcase page in the project, and source-linked documentation |
+| [sdlc-ui-implement](skills/sdlc-ui-implement/SKILL.md) | Build a screen from the kit | Working UI in the app; missing components are discussed before extending the kit |
+| [sdlc-ui-review](skills/sdlc-ui-review/SKILL.md) | Check source and rendered UI against the kit | A report with evidence and proposed solutions; no automatic changes |
+
+All three are included in `sdlc`. To install only the UI skills:
+
+```bash
+npx github:kulichevskiy/skills sdlc-ui --target=codex
+```
+
+Start with `$sdlc-ui-kit`, then use `$sdlc-ui-implement` for a screen and `$sdlc-ui-review` to inspect its conformity. Use `/` instead of `$` in Claude Code or Cursor; in Copilot, ask it to use the named skill. Each skill can also be invoked on its own. Existing project policies and agreed task documents apply, but mandatory setup and intent → spec → tickets are not prerequisites for these UI entry points.
+
+The kit starts with the first agreed scenarios and grows as needed. In an existing product, the agent shows discovered variants and helps you choose a canonical set; migrating old screens is a separate task. The showcase runs with the project's tools and imports the real components. Review checks code and the rendered interface, distinguishes violations from missing rules or unavailable checks, and waits for a separate instruction before applying recommendations. Version one covers web UI, not native apps or a general UX audit.
 
 ## Adapt it to your project
 

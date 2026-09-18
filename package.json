@@ -16,7 +16,8 @@
     "install.sh",
     "README.md",
     "docs/installation.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "docs/ui-evaluation.md"
   ],
   "engines": {
     "node": ">=18"

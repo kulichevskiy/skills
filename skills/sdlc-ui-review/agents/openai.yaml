@@ -1,0 +1,4 @@
+interface:
+  display_name: "sdlc-ui-review"
+  short_description: "Report UI Kit deviations without changing code"
+  default_prompt: "Use $sdlc-ui-review for this project and the UI task I describe."

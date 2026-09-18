@@ -1,0 +1,34 @@
+[
+  {
+    "background": "rgb(180, 35, 24)",
+    "button": "button button--danger",
+    "groupGap": "16px",
+    "groupWrap": "wrap",
+    "height": 844,
+    "url": "http://127.0.0.1:8878/",
+    "width": 390
+  },
+  {
+    "background": "rgb(180, 35, 24)",
+    "button": "button button--danger",
+    "groupGap": "16px",
+    "groupWrap": "wrap",
+    "height": 800,
+    "url": "http://127.0.0.1:8878/",
+    "width": 1280
+  },
+  {
+    "background": "rgb(21, 94, 239)",
+    "button": "button button--default",
+    "height": 800,
+    "url": "http://127.0.0.1:8878/showcase.html",
+    "width": 1280
+  },
+  {
+    "background": "rgb(21, 94, 239)",
+    "button": "button button--default",
+    "height": 844,
+    "url": "http://127.0.0.1:8878/showcase.html",
+    "width": 390
+  }
+]

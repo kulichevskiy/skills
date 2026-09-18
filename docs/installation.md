@@ -1,13 +1,14 @@
-# Install the SDLC bundle
+# Install the SDLC skills
 
-Install all seven SDLC skills together. Choose a Node, shell, or manual installation below. Return to the [quick start](../README.md#get-started) afterward to configure your project.
+Choose `sdlc` for all ten skills (seven core plus three UI skills), or `sdlc-ui` for only the three web UI skills. Both bundles include their shared resources. Use Node, shell, or manual installation below. Start the core workflow with `sdlc-setup`, or standalone UI work with `sdlc-ui-kit`. See the [quick start](../README.md#get-started).
 
 ## With Node
 
 Requires Node 18 or newer. Run from the project where you want to use the skills:
 
 ```bash
-npx github:kulichevskiy/skills sdlc                 # all seven SDLC skills, into this project
+npx github:kulichevskiy/skills sdlc                 # all ten SDLC skills, into this project
+npx github:kulichevskiy/skills sdlc-ui              # only the three web UI skills
 npx github:kulichevskiy/skills sdlc --global        # for every project on this machine
 npx github:kulichevskiy/skills                      # see what is available
 ```
@@ -20,7 +21,7 @@ Use the shell installer on a machine with `sh`, `curl`, and `tar`:
 curl -fsSL https://raw.githubusercontent.com/kulichevskiy/skills/main/install.sh | sh -s -- sdlc
 ```
 
-The `-s --` matters: it hands what follows to the script rather than to `sh`. Add `--global` after the skill name the same way. It is one file of shell, [`install.sh`](../install.sh), if you would rather read it before piping it anywhere.
+Replace `sdlc` with `sdlc-ui` to install only the UI bundle. The `-s --` matters: it hands what follows to the script rather than to `sh`. Add `--global` after the skill name the same way. It is one file of shell, [`install.sh`](../install.sh), if you would rather read it before piping it anywhere.
 
 On Windows, use either route from inside WSL. PowerShell has no `sh`, so the second one does not work there.
 
@@ -47,18 +48,20 @@ Project or global is a question of who needs the skill. Into the project if it i
 
 ## Updates and removal
 
-Both routes install from GitHub. Run the same command again with `--force` to replace installed copies, including removal of stale files. For `sdlc`, every member is checked for conflicts before any is written; without `--force`, one existing member stops the whole installation. Unrelated skills are preserved. To uninstall SDLC, delete only its seven `sdlc-*` directories from the chosen location; project artifacts remain in place.
+Both routes install from GitHub. Run the same command again with `--force` to replace installed copies, including removal of stale files. For either bundle, every member is checked for conflicts before any is written; without `--force`, one existing member stops the whole installation. Unrelated skills are preserved. To uninstall, delete only the skill directories listed in the selected bundle manifest from the chosen location; project artifacts remain in place. The bundles overlap: removing the UI directories also removes UI capabilities from a full SDLC installation. Installing one bundle over overlapping installed members needs `--force`; updating `sdlc-ui` preserves the installed core skills.
 
 Only the installed copy is told which language to answer in; the skill in this repository stays English, so `--force` keeps overwriting cleanly.
 
 ## Manual installation
 
-Clone or download this repository, then copy all seven `skills/sdlc-*` directories side by side into the appropriate location from the table. Include each directory's `agents/` and `references/` contents. For a fresh Claude Code project installation, run from your project:
+Clone or download this repository, then copy the directories listed in [bundles/sdlc.txt](../bundles/sdlc.txt) or [bundles/sdlc-ui.txt](../bundles/sdlc-ui.txt) side by side into the appropriate location from the table. Include each directory's `agents/` and `references/` contents. For a fresh Claude Code project installation, run from your project:
 
 ```bash
 git clone https://github.com/kulichevskiy/skills.git /tmp/agent-skills
 mkdir -p .claude/skills
-cp -R /tmp/agent-skills/skills/sdlc-* .claude/skills/
+while IFS= read -r skill; do
+  cp -R "/tmp/agent-skills/skills/$skill" .claude/skills/
+done < /tmp/agent-skills/bundles/sdlc.txt
 ```
 
-Use an unused clone destination. For updates to existing copies, use an installer with `--force` so removed files do not linger. The `sdlc` install name is a bundle, not an eighth skill. Individual SDLC installation through these installers is rejected because the skills share references and call one another. `setup-env` remains independently installable.
+For UI only, use `bundles/sdlc-ui.txt` in the final line. Use an unused clone destination. For updates to existing copies, use an installer with `--force` so removed files do not linger. The install names `sdlc` and `sdlc-ui` are bundles, not additional skills. Individual SDLC installation through these installers is rejected because the skills share references and call one another. The UI bundle is self-contained and needs no core skill directories; independent invocation does not require installing skills one at a time. `setup-env` remains independently installable.
