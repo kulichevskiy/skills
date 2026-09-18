@@ -1,0 +1,7 @@
+sdlc-setup
+sdlc-capture-intent
+sdlc-to-spec
+sdlc-to-tickets
+sdlc-implement
+sdlc-code-review
+sdlc-babysit

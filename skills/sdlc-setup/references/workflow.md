@@ -1,0 +1,59 @@
+# Shared workflow contract — v2
+
+## Mandatory setup entry check
+
+Before any SDLC stage except setup itself, read `docs/sdlc/project.md`. If it is absent, draft, incomplete, or demonstrably unusable, follow [sdlc-setup](../SKILL.md) first. Remember the original requested stage and task. Resume it after the profile is ready, retaining the user's existing task authorization. An unfinished setup leaves the original task pending with a concrete gap report; do not silently fall back to assumptions.
+
+Reuse accepted answers. A ready profile does not trigger another interview on each invocation. An older profile without these status names can be reused if it records accepted policy, usable commands, and closed setup gaps; normalize the status without reopening settled decisions. If it is unclear whether the old profile meets those conditions, repair only the missing information. Read-only requests remain read-only: if setup needs writes or decisions outside the allowed scope, report that specific blocker.
+
+## Agent capabilities
+
+All seven skill directories must be installed side by side. Resolve linked files relative to the skill file, not the repository working directory. Use the host's skill invocation mechanism when available; otherwise read the linked `SKILL.md` and follow it in the same session. No particular connector, CLI, or subagent API is required by the package. Use available authorized equivalents for Git and remote PR operations. If a required capability is unavailable, record the concrete blocker instead of inventing a tool or a successful result.
+
+Delegate only when allowed by the host, user, and project. Otherwise execute sequentially. Reviews without independent subagents use separate passes and disclose their limited independence; do not claim independent approval of your own implementation. Installing skills does not install development tools or grant execution permissions.
+
+## Sources of truth
+
+The target Git repository owns work artifacts. Skills are reusable procedures; project policy lives in `docs/sdlc/project.md`. Follow that profile's artifact root (default `docs/`) and change-directory pattern (default `feat-{slug}`). `sdlc-capture-intent` proposes the task slug; all later stages reuse it. The default layout is:
+
+```
+docs/feat-{slug}/
+  intent.md
+  spec.md
+  plan.md
+  tickets/T01.md
+  execution.md
+  review.md
+```
+
+Use a short descriptive lowercase kebab-case slug. Reuse an existing directory when continuing the same task; for a different task with a colliding slug, propose a distinct slug before writing. Preserve a user-supplied directory override and existing artifact locations unless migration is requested. Project-wide configuration stays in `docs/sdlc/project.md`, outside any single feature.
+
+Create files when their stage needs them. Ticket files are the canonical task status; execution.md holds ownership, integrated commits, verification receipts, PR linkage, and the next action. Do not maintain a second task-status board. Default to a single integration branch/PR per change; ticket done means integrated and verified, not merged to main.
+
+## Revision and acceptance
+
+Give intent, spec, and plan an integer `revision`, `status: draft | accepted | superseded`, and `accepted_revision` (empty until accepted). Record a short acceptance note identifying the user's decision. References to upstream artifacts include path and revision. Increment revisions for material content changes; formatting and receipt updates do not create a new design revision. Never mark a revision accepted just because a prior version was accepted.
+
+The user's accepted decisions in the current conversation count; avoid duplicate approval prompts. Stage skills can save drafts immediately. Implementation requires accepted intent/spec/plan applicable to its scope. A single explicit acceptance can cover several concrete artifacts shown together. Broader permission to implement does not resolve a contradictory product requirement.
+
+If an upstream revision changes, assess downstream impact before dependent work proceeds. Preserve completed work and receipts. Affected artifacts become draft until reconciled; unaffected downstream artifacts may reference the new revision with a recorded reason. Changes to scope, public contracts, or acceptance criteria require the user's decision unless already covered by authorization. Routine implementation adjustments within an accepted spec can be recorded in plan notes without restarting design approval.
+
+## Ticket state
+
+Use `draft`, `ready`, `running`, `blocked`, `done`, or `superseded` in each ticket. `blocked_by` is a list of stable ticket IDs. Ready means the ticket is accepted for execution; scheduling additionally requires every blocker done and integrated into the worker's base. Missing references and cycles are errors.
+
+Only the coordinator writes shared status and planning artifacts during parallel execution. A ticket becomes done after its criteria pass and its result is integrated and checked. A blocked ticket records the concrete obstacle and next action; independent ready work can continue. On resume, reconcile statuses with actual code, commits, workers, and evidence before dispatching.
+
+## Verification receipts
+
+Record check name, command, scope, baseline where relevant, tool/policy version, tested commit or tree snapshot, result, and evidence path or CI URL. Logs must follow repository data-handling rules. Distinguish pass, fail, pending, unavailable, and explicitly justified not-applicable. Skipping a required check is not passing it.
+
+Local evidence may describe an uncommitted tree; final PR gates must attest to the current remote head or its CI merge candidate. New code/tests/check configuration invalidate affected evidence. A receipt-only commit may retain evidence only when the checked input tree is demonstrably unchanged and repository policy permits this; remote required checks still govern the current PR head. Do not endlessly rewrite committed receipts solely to mention their own commit SHA.
+
+The accepted project profile defines all mandatory gates and exact scopes, including Basic/Strict overrides and justified non-applicable checks. Follow the setup entry check before starting a stage. Once setup is ready, later failing project checks are task verification failures, not a reason to repeat onboarding or renegotiate thresholds. No skill may lower thresholds, widen exclusions, or remove requirements to make its own work pass.
+
+## Standards and scope
+
+Repository instructions and adopted standards govern. Distinguish documented rules, observed conventions, and general review judgments. A reviewer cites the rule or explains the concrete failure scenario. Review task fulfillment against both intent outcomes and spec requirements.
+
+Each invocation performs the requested stage/scope. Follow established authorization for local changes, commits, publishing, communication, and merge. Do not assume merely installing or invoking a skill grants new external permissions. Continue authorized delivery without asking for the same permission again. Preserve repository-specific browser and secret-handling restrictions.

@@ -25,8 +25,8 @@ describe() {
   case "$1" in
     claude)  LABEL="Claude Code";    PROJECT=".claude/skills";  HOMEDIR=".claude/skills";  CALL="/" ;;
     cursor)  LABEL="Cursor";         PROJECT=".cursor/skills";  HOMEDIR=".cursor/skills";  CALL="/" ;;
-    codex)   LABEL="Codex";          PROJECT=".codex/skills";   HOMEDIR=".codex/skills";   CALL='$' ;;
-    copilot) LABEL="GitHub Copilot"; PROJECT=".github/skills";  HOMEDIR=".copilot/skills"; CALL="/" ;;
+    codex)   LABEL="Codex";          PROJECT=".agents/skills";  HOMEDIR=".agents/skills";  CALL='$' ;;
+    copilot) LABEL="GitHub Copilot"; PROJECT=".github/skills";  HOMEDIR=".copilot/skills"; CALL="" ;;
     *) return 1 ;;
   esac
 }
@@ -36,8 +36,8 @@ usage() {
 
 Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
-  curl -fsSL https://raw.githubusercontent.com/$REPO/$BRANCH/install.sh | sh -s -- <skill>
-  ... | sh -s -- <skill> --global     for every project, not just this one
+  curl -fsSL https://raw.githubusercontent.com/$REPO/$BRANCH/install.sh | sh -s -- <skill|sdlc>
+  ... | sh -s -- <skill|sdlc> --global     for every project, not just this one
 
   --target=$(printf '%s' "$NAMES" | tr ' ' '|')   where to install, asked if omitted
   --lang=<language>   language the agent answers in, asked if omitted
@@ -85,7 +85,8 @@ for arg do
     --force)    FORCE=1 ;;
     --help)     usage; exit 0 ;;
     --*)        fail "Unknown option: $arg" ;;
-    *)          SKILL="$arg" ;;
+    *)          [ -z "$SKILL" ] || fail "Choose one skill or the sdlc bundle."
+                SKILL="$arg" ;;
   esac
 done
 
@@ -100,6 +101,7 @@ if [ -n "${SKILLS_SOURCE:-}" ]; then
   # Test seam, so test/parity.sh can check a working copy rather than whatever
   # is published on the branch.
   cp -R "$SKILLS_SOURCE/skills" "$TMP/skills"
+  cp -R "$SKILLS_SOURCE/bundles" "$TMP/bundles"
 else
   command -v tar > /dev/null 2>&1 || fail "This needs tar, and it is not installed."
   # Downloading into a file rather than straight down a pipe: on the left of a
@@ -109,6 +111,8 @@ else
   tar -xzf "$TMP/repo.tar.gz" -C "$TMP" --strip-components=1 || fail "Downloaded $REPO but could not unpack it."
 fi
 [ -d "$TMP/skills" ] || fail "Found no skills to install."
+[ -s "$TMP/bundles/sdlc.txt" ] || fail "Missing SDLC bundle manifest."
+SDLC="$(cat "$TMP/bundles/sdlc.txt")"
 
 # A directory counts as a skill only if it holds a SKILL.md, matching bin/.
 AVAILABLE=""
@@ -121,12 +125,30 @@ AVAILABLE="${AVAILABLE# }"
 
 if [ -z "$SKILL" ]; then
   usage
-  printf '\nAvailable:\n\n'
-  for name in $AVAILABLE; do printf '  %s\n' "$name"; done
+  printf '\nAvailable:\n\n  sdlc — the complete seven-skill workflow; start with sdlc-setup\n'
+  for name in $AVAILABLE; do
+    case "$name" in sdlc-*) continue ;; esac
+    printf '  %s\n' "$name"
+  done
   printf '\n'
   exit 0
 fi
-[ -f "$TMP/skills/$SKILL/SKILL.md" ] || fail "No skill named \"$SKILL\" here. Available: $AVAILABLE"
+case "$SKILL" in
+  sdlc) SELECTED="$SDLC" ;;
+  sdlc-*) fail "Install SDLC skills together: use sdlc as the install name." ;;
+  *)
+    # Match discovered names, not arbitrary filesystem paths.
+    case " $AVAILABLE " in
+      *" $SKILL "*) SELECTED="$SKILL" ;;
+      *) fail "No skill named \"$SKILL\" here. Available: $AVAILABLE" ;;
+    esac ;;
+esac
+for name in $SELECTED; do
+  case "$name" in
+    ''|*[!a-z0-9-]*|-*|*-|*--*) fail "Invalid bundled skill: $name" ;;
+  esac
+  [ -f "$TMP/skills/$name/SKILL.md" ] || fail "Missing bundled skill: $name"
+done
 
 if [ -z "$TARGET" ] && [ -n "$TTY" ]; then
   printf '\n  Which agent reads these skills?\n\n' > "$TTY"
@@ -155,28 +177,36 @@ if [ -z "$SPEAK" ]; then
 fi
 
 if [ -n "$EVERYWHERE" ]; then ROOT="$HOME"; INTO="$HOMEDIR"; else ROOT="$PWD"; INTO="$PROJECT"; fi
-DEST="$ROOT/$INTO/$SKILL"
-
-if [ -e "$DEST" ] && [ -z "$FORCE" ]; then
-  fail "Already installed at $DEST
+for name in $SELECTED; do
+  DEST="$ROOT/$INTO/$name"
+  if { [ -e "$DEST" ] || [ -L "$DEST" ]; } && [ -z "$FORCE" ]; then
+    fail "Already installed at $DEST
   Add --force to overwrite it."
-fi
+  fi
+done
 
 mkdir -p "$ROOT/$INTO"
-rm -rf "$DEST"
-cp -R "$TMP/skills/$SKILL" "$DEST"
-
-# The skill in the repository stays English; only the installed copy is told to
-# answer in another language, so --force keeps overwriting cleanly.
 SPOKEN=""
-case "$(printf '%s' "$SPEAK" | tr '[:upper:]' '[:lower:]')" in
-  english|en) ;;
-  *) printf '\n## Language\n\nAnswer the user in %s. Commands, file paths and code stay as written.\n' \
-       "$SPEAK" >> "$DEST/SKILL.md"
-     SPOKEN="
-  It answers you in $SPEAK." ;;
-esac
+COUNT=0
+for name in $SELECTED; do
+  DEST="$ROOT/$INTO/$name"
+  rm -rf "$DEST"
+  cp -R "$TMP/skills/$name" "$DEST"
+  COUNT=$((COUNT + 1))
 
+  # Localize installed copies only; --force replaces rather than appends.
+  case "$(printf '%s' "$SPEAK" | tr '[:upper:]' '[:lower:]')" in
+    english|en) ;;
+    *) printf '\n## Language\n\nAnswer the user in %s. Commands, file paths and code stay as written.\n' \
+         "$SPEAK" >> "$DEST/SKILL.md"
+       SPOKEN="
+  It answers you in $SPEAK." ;;
+  esac
+done
+
+ENTRY="$SKILL"
+if [ "$SKILL" = sdlc ]; then ENTRY=sdlc-setup; DEST="$ROOT/$INTO"; fi
+if [ -n "$CALL" ]; then INVOKE="call it as $CALL$ENTRY"; else INVOKE="ask the agent to use $ENTRY"; fi
 if [ -n "$EVERYWHERE" ]; then SCOPE="in every project"; else SCOPE="in this project"; fi
-printf '\n  Installed at %s\n  Available to %s %s — call it as %s%s or let its description triggers fire.%s\n\n' \
-  "$DEST" "$LABEL" "$SCOPE" "$CALL" "$SKILL" "$SPOKEN"
+printf '\n  Installed %s skill(s) at %s\n  Available to %s %s — %s.%s\n\n' \
+  "$COUNT" "$DEST" "$LABEL" "$SCOPE" "$INVOKE" "$SPOKEN"
