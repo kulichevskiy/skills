@@ -1,0 +1,4 @@
+interface:
+  display_name: "sdlc-to-spec"
+  short_description: "Design a solution from an accepted intent"
+  default_prompt: "Use $sdlc-to-spec for this project and the task I describe."

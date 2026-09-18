@@ -4,21 +4,22 @@
 // exists precisely for machines without it. They must answer identically.
 // test/parity.sh runs both over the same matrix and fails on any difference —
 // change one side and run it.
-import { appendFileSync, cpSync, existsSync, readdirSync, readFileSync, mkdirSync, rmSync } from 'node:fs'
+import { appendFileSync, cpSync, existsSync, lstatSync, readdirSync, readFileSync, mkdirSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
 const SOURCE = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'skills')
+const SDLC = readFileSync(new URL('../bundles/sdlc.txt', import.meta.url), 'utf8').trim().split(/\s+/)
 
 // A skill is the same folder everywhere — SKILL.md plus its siblings. Only the
 // directory the agent reads differs, so a target is just a pair of paths.
 const TARGETS = [
   { name: 'claude', label: 'Claude Code', project: ['.claude', 'skills'], home: ['.claude', 'skills'], call: '/' },
   { name: 'cursor', label: 'Cursor', project: ['.cursor', 'skills'], home: ['.cursor', 'skills'], call: '/' },
-  { name: 'codex', label: 'Codex', project: ['.codex', 'skills'], home: ['.codex', 'skills'], call: '$' },
-  { name: 'copilot', label: 'GitHub Copilot', project: ['.github', 'skills'], home: ['.copilot', 'skills'], call: '/' },
+  { name: 'codex', label: 'Codex', project: ['.agents', 'skills'], home: ['.agents', 'skills'], call: '$' },
+  { name: 'copilot', label: 'GitHub Copilot', project: ['.github', 'skills'], home: ['.copilot', 'skills'], call: null },
 ]
 
 function available() {
@@ -41,8 +42,8 @@ function usage(skills) {
   console.log(`
 Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
-  npx github:kulichevskiy/skills <skill>            into this project
-  npx github:kulichevskiy/skills <skill> --global   for every project
+  npx github:kulichevskiy/skills <skill|sdlc>            into this project
+  npx github:kulichevskiy/skills <skill|sdlc> --global   for every project
 
   --target=<${TARGETS.map((it) => it.name).join('|')}>   where to install, asked if omitted
   --lang=<language>   language the agent answers in, asked if omitted
@@ -52,12 +53,16 @@ Both questions are skipped when the output is not a terminal, so the command
 stays usable from a script: it installs for Claude Code in English.
 
 Available:
+
+  sdlc
+    The complete seven-skill workflow; start with sdlc-setup.
 `)
   if (skills.length === 0) {
     console.log('  (nothing found — skills/ is empty)\n')
     return
   }
   for (const skill of skills) {
+    if (SDLC.includes(skill.name)) continue
     console.log(`  ${skill.name}`)
     if (skill.summary) console.log(`    ${skill.summary}`)
   }
@@ -112,11 +117,16 @@ const KNOWN = ['target', 'lang', 'global', 'force', 'help']
 const args = process.argv.slice(2)
 const flags = new Map()
 for (const arg of args.filter((it) => it.startsWith('--'))) {
-  const [key, value] = arg.slice(2).split('=')
+  const separator = arg.indexOf('=')
+  const key = arg.slice(2, separator === -1 ? undefined : separator)
+  const value = separator === -1 ? true : arg.slice(separator + 1)
   if (!KNOWN.includes(key)) fail(`Unknown option: ${arg}`)
-  flags.set(key, value ?? true)
+  if (['global', 'force', 'help'].includes(key) && value !== true) fail(`--${key} does not take a value.`)
+  flags.set(key, value)
 }
-const requested = args.find((it) => !it.startsWith('--'))
+const positional = args.filter((it) => !it.startsWith('--'))
+if (positional.length > 1) fail('Choose one skill or the sdlc bundle.')
+const [requested] = positional
 const skills = available()
 
 // Listing what is available is a documented way to run this, not a misuse.
@@ -125,9 +135,15 @@ if (!requested || flags.has('help')) {
   process.exit(0)
 }
 
-const skill = skills.find((it) => it.name === requested)
-if (!skill) {
+if (SDLC.includes(requested)) fail('Install SDLC skills together: use sdlc as the install name.')
+const selected = requested === 'sdlc' ? SDLC : [requested]
+if (requested !== 'sdlc' && !skills.some((it) => it.name === requested)) {
   fail(`No skill named "${requested}" here. Available: ${skills.map((it) => it.name).join(', ') || '(none)'}`)
+}
+for (const name of selected) {
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name) || !skills.some((it) => it.name === name)) {
+    fail(`Missing or invalid bundled skill: ${name}`)
+  }
 }
 
 // A flag that takes a value and was given none is a slip, not a way to ask the
@@ -160,23 +176,31 @@ language ??= 'English'
 
 const everywhere = flags.has('global')
 const directory = join(everywhere ? homedir() : process.cwd(), ...(everywhere ? target.home : target.project))
-const destination = join(directory, skill.name)
-
-if (existsSync(destination) && !flags.has('force')) {
-  fail(`Already installed at ${destination}\n  Add --force to overwrite it.`)
+// Check every destination before writing any member of a bundle. lstat also
+// detects dangling symlinks, which must not be silently replaced.
+for (const name of selected) {
+  const destination = join(directory, name)
+  if (lstatSync(destination, { throwIfNoEntry: false }) && !flags.has('force')) {
+    fail(`Already installed at ${destination}\n  Add --force to overwrite it.`)
+  }
 }
 
 mkdirSync(directory, { recursive: true })
 // Copying over the old copy would merge, leaving behind files the skill has
 // since dropped. --force means replace, so clear it first.
-rmSync(destination, { recursive: true, force: true })
-cpSync(join(SOURCE, skill.name), destination, { recursive: true })
-const localized = localize(join(destination, 'SKILL.md'), language)
-
+for (const name of selected) {
+  const destination = join(directory, name)
+  rmSync(destination, { recursive: true, force: true })
+  cpSync(join(SOURCE, name), destination, { recursive: true })
+  localize(join(destination, 'SKILL.md'), language)
+}
+const destination = requested === 'sdlc' ? directory : join(directory, requested)
 const shown = everywhere ? destination : relative(process.cwd(), destination) || destination
 const scope = everywhere ? 'in every project' : 'in this project'
+const entry = requested === 'sdlc' ? 'sdlc-setup' : requested
+const invocation = target.call ? `call it as ${target.call}${entry}` : `ask the agent to use ${entry}`
 
 console.log(`
-  Installed at ${shown}
-  Available to ${target.label} ${scope} — call it as ${target.call}${skill.name} or let its description triggers fire.${localized ? `\n  It answers you in ${language}.` : ''}
+  Installed ${selected.length} skill(s) at ${shown}
+  Available to ${target.label} ${scope} — ${invocation}.${!/^en(glish)?$/i.test(language) ? `\n  It answers you in ${language}.` : ''}
 `)
