@@ -37,8 +37,8 @@ usage() {
 
 Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
-  curl -fsSL https://raw.githubusercontent.com/$REPO/$BRANCH/install.sh | sh -s -- <skill|sdlc>
-  ... | sh -s -- <skill|sdlc> --global     for every project, not just this one
+  curl -fsSL https://raw.githubusercontent.com/$REPO/$BRANCH/install.sh | sh -s -- <skill|sdlc|sdlc-ui>
+  ... | sh -s -- <skill|sdlc|sdlc-ui> --global     for every project, not just this one
 
   --target=$(printf '%s' "$NAMES" | tr ' ' '|')   where to install, asked if omitted
   --lang=<language>   language the agent answers in, asked if omitted
@@ -46,6 +46,10 @@ Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
 Both questions are skipped where there is no terminal to ask on, so the
 command stays usable from a script: it installs for Claude Code in English.
+
+Bundles:
+  sdlc     — ten skills; start with sdlc-setup
+  sdlc-ui  — three standalone web UI skills; start with sdlc-ui-kit
 EOF
 }
 
@@ -86,7 +90,7 @@ for arg do
     --force)    FORCE=1 ;;
     --help)     usage; exit 0 ;;
     --*)        fail "Unknown option: $arg" ;;
-    *)          [ -z "$SKILL" ] || fail "Choose one skill or the sdlc bundle."
+    *)          [ -z "$SKILL" ] || fail "Choose one skill or bundle."
                 SKILL="$arg" ;;
   esac
 done
@@ -114,6 +118,8 @@ fi
 [ -d "$TMP/skills" ] || fail "Found no skills to install."
 [ -s "$TMP/bundles/sdlc.txt" ] || fail "Missing SDLC bundle manifest."
 SDLC="$(cat "$TMP/bundles/sdlc.txt")"
+[ -s "$TMP/bundles/sdlc-ui.txt" ] || fail "Missing SDLC UI bundle manifest."
+SDLC_UI="$(cat "$TMP/bundles/sdlc-ui.txt")"
 
 # A directory counts as a skill only if it holds a SKILL.md, matching bin/.
 AVAILABLE=""
@@ -126,7 +132,7 @@ AVAILABLE="${AVAILABLE# }"
 
 if [ -z "$SKILL" ]; then
   usage
-  printf '\nAvailable:\n\n  sdlc — the complete seven-skill workflow; start with sdlc-setup\n'
+  printf '\nStandalone skills:\n\n'
   for name in $AVAILABLE; do
     case "$name" in sdlc-*) continue ;; esac
     printf '  %s\n' "$name"
@@ -136,7 +142,8 @@ if [ -z "$SKILL" ]; then
 fi
 case "$SKILL" in
   sdlc) SELECTED="$SDLC" ;;
-  sdlc-*) fail "Install SDLC skills together: use sdlc as the install name." ;;
+  sdlc-ui) SELECTED="$SDLC_UI" ;;
+  sdlc-*) fail "Install SDLC skills together: use sdlc, or sdlc-ui for only the UI skills." ;;
   *)
     # Match discovered names, not arbitrary filesystem paths.
     case " $AVAILABLE " in
@@ -206,7 +213,10 @@ for name in $SELECTED; do
 done
 
 ENTRY="$SKILL"
-if [ "$SKILL" = sdlc ]; then ENTRY=sdlc-setup; DEST="$ROOT/$INTO"; fi
+case "$SKILL" in
+  sdlc) ENTRY=sdlc-setup; DEST="$ROOT/$INTO" ;;
+  sdlc-ui) ENTRY=sdlc-ui-kit; DEST="$ROOT/$INTO" ;;
+esac
 if [ -n "$CALL" ]; then INVOKE="call it as $CALL$ENTRY"; else INVOKE="ask the agent to use $ENTRY"; fi
 if [ -n "$EVERYWHERE" ]; then SCOPE="in every project"; else SCOPE="in this project"; fi
 printf '\n  Installed %s skill(s) at %s\n  Available to %s %s — %s.%s\n\n' \

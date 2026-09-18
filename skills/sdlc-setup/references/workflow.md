@@ -1,14 +1,16 @@
-# Shared workflow contract — v2
+# Shared workflow contract — v3
 
 ## Mandatory setup entry check
 
-Before any SDLC stage except setup itself, read `docs/sdlc/project.md`. If it is absent, draft, incomplete, or demonstrably unusable, follow [sdlc-setup](../SKILL.md) first. Remember the original requested stage and task. Resume it after the profile is ready, retaining the user's existing task authorization. An unfinished setup leaves the original task pending with a concrete gap report; do not silently fall back to assumptions.
+This entry check governs the seven core skills: setup, capture-intent, to-spec, to-tickets, implement, code-review, and babysit. The three standalone UI skills follow the [UI contract](../../sdlc-ui-kit/references/ui-workflow.md), without mandatory setup or the full document chain; existing project policy still applies.
+
+Before any core SDLC stage except setup itself, read `docs/sdlc/project.md`. If it is absent, draft, incomplete, or demonstrably unusable, follow [sdlc-setup](../SKILL.md) first. Remember the original requested stage and task. Resume it after the profile is ready, retaining the user's existing task authorization. An unfinished setup leaves the original task pending with a concrete gap report; do not silently fall back to assumptions.
 
 Reuse accepted answers. A ready profile does not trigger another interview on each invocation. An older profile without these status names can be reused if it records accepted policy, usable commands, and closed setup gaps; normalize the status without reopening settled decisions. If it is unclear whether the old profile meets those conditions, repair only the missing information. Read-only requests remain read-only: if setup needs writes or decisions outside the allowed scope, report that specific blocker.
 
 ## Agent capabilities
 
-All seven skill directories must be installed side by side. Resolve linked files relative to the skill file, not the repository working directory. Use the host's skill invocation mechanism when available; otherwise read the linked `SKILL.md` and follow it in the same session. No particular connector, CLI, or subagent API is required by the package. Use available authorized equivalents for Git and remote PR operations. If a required capability is unavailable, record the concrete blocker instead of inventing a tool or a successful result.
+Install the full `sdlc` bundle (seven core skills plus three UI skills) side by side, including references. The `sdlc-ui` bundle contains only the three UI skills and their self-contained shared resources. Resolve linked files relative to the skill file, not the repository working directory. Use the host's skill invocation mechanism when available; otherwise read the linked `SKILL.md` and follow it in the same session. No particular connector, CLI, or subagent API is required by the package. Use available authorized equivalents for Git and remote PR operations. If a required capability is unavailable, record the concrete blocker instead of inventing a tool or a successful result.
 
 Delegate only when allowed by the host, user, and project. Otherwise execute sequentially. Reviews without independent subagents use separate passes and disclose their limited independence; do not claim independent approval of your own implementation. Installing skills does not install development tools or grant execution permissions.
 

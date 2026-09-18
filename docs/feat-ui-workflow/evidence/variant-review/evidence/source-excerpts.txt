@@ -1,0 +1,45 @@
+screen.js
+1: import {button} from './ui/button.js';
+2: document.querySelector('#actions').append(button('Archive', {variant: 'danger'}));
+
+ui/button.js
+1: export function button(label, {variant = 'default'} = {}) { const el = document.createElement('button'); el.className = `button button--${variant}`; el.textContent = label; return el; }
+
+ui/tokens.css
+1: :root { --action: #155eef; --space: 16px; --radius: 8px; }
+2: .button { background: var(--action); color: white; border: 0; padding: 12px var(--space); border-radius: var(--radius); font: inherit; }
+3: .stack { display: flex; gap: var(--space); flex-wrap: wrap; }
+4: body { font: 16px system-ui; margin: 24px; }
+5: .button--danger { background: #b42318; }
+
+screen.css
+1: /* no screen overrides */
+
+docs/ui-kit/index.md
+1: # Account Kit
+2:
+3: Revision: 1. Status: ready. Adopted scope: Account action controls. User selected blue action controls and wrapping horizontal groups. Current scope must be checked against actual sources.
+4:
+5: Stack: native ES modules and CSS. Sources: ui/button.js, ui/tokens.css.
+6: Run `npm start`; showcase http://127.0.0.1:8769/showcase.html. Account http://127.0.0.1:8769/.
+7:
+8: Rules: [rules.md](rules.md). Components: [components.md](components.md).
+
+docs/ui-kit/rules.md
+1: # Adopted rules
+2:
+3: - REUSE-1: action buttons use the shared button() factory in ui/button.js.
+4: - COLOR-1: action button backgrounds use --action from ui/tokens.css, with no screen-local override.
+5: - LAYOUT-1: action groups can use .stack with wrapping and shared spacing.
+6: - VIEW-1: verify idle Account controls at widths 390 and 1280.
+7:
+8: Typography for support text has not been decided. No other action states are in this fixture scope.
+
+docs/ui-kit/components.md
+1: # Components
+2:
+3: BTN-1: button(label), import from ui/button.js; one default variant, idle state. Example: showcase.html. No other variants adopted.
+4: Group composition: .stack from ui/tokens.css can combine approved controls; no separate reusable component needed.
+
+showcase.html
+1: <!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kit showcase</title><link rel="stylesheet" href="ui/tokens.css"><h1>Kit</h1><div id="samples" class="stack"></div><script type="module">import {button} from "./ui/button.js"; document.querySelector("#samples").append(button("Primary action"));</script></html>

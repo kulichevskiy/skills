@@ -1,0 +1,19 @@
+{
+  "original_file_count": 19,
+  "changed_or_deleted_original_files": [],
+  "added_files": [
+    "docs/ui-reviews/account/browser-attempt/evidence/account-1280.png",
+    "docs/ui-reviews/account/browser-attempt/evidence/account-390.png",
+    "docs/ui-reviews/account/browser-attempt/evidence/after-original-hashes.json",
+    "docs/ui-reviews/account/browser-attempt/evidence/before-hashes.json",
+    "docs/ui-reviews/account/browser-attempt/evidence/browser-attempt.md",
+    "docs/ui-reviews/account/browser-attempt/evidence/showcase-1280.png",
+    "docs/ui-reviews/account/browser-attempt/evidence/showcase-390.png",
+    "docs/ui-reviews/account/browser-attempt/ui-review-before-runtime-recovery.md",
+    "docs/ui-reviews/account/browser-attempt/ui-review.md",
+    "docs/ui-reviews/account/browser-unavailable/ui-review.md",
+    "docs/ui-reviews/account/write-audit.json"
+  ],
+  "allowed_write_prefix": "docs/ui-reviews/",
+  "added_outside_allowed_prefix": []
+}

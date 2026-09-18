@@ -1,0 +1,4 @@
+interface:
+  display_name: "sdlc-ui-implement"
+  short_description: "Build production screens from the shared UI Kit"
+  default_prompt: "Use $sdlc-ui-implement for this project and the UI task I describe."

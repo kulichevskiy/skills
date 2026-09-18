@@ -14,7 +14,10 @@
     "bundles",
     "skills",
     "install.sh",
-    "README.md"
+    "README.md",
+    "docs/installation.md",
+    "CONTRIBUTING.md",
+    "docs/ui-evaluation.md"
   ],
   "engines": {
     "node": ">=18"

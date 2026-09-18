@@ -11,7 +11,12 @@ import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
 const SOURCE = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'skills')
-const SDLC = readFileSync(new URL('../bundles/sdlc.txt', import.meta.url), 'utf8').trim().split(/\s+/)
+const BUNDLES = new Map([
+  ['sdlc', { entry: 'sdlc-setup', summary: 'The complete ten-skill family; start with sdlc-setup.' }],
+  ['sdlc-ui', { entry: 'sdlc-ui-kit', summary: 'Three standalone web UI skills; start with sdlc-ui-kit.' }],
+].map(([name, bundle]) => [name, { ...bundle,
+  members: readFileSync(new URL(`../bundles/${name}.txt`, import.meta.url), 'utf8').trim().split(/\s+/),
+}]))
 
 // A skill is the same folder everywhere — SKILL.md plus its siblings. Only the
 // directory the agent reads differs, so a target is just a pair of paths.
@@ -42,8 +47,8 @@ function usage(skills) {
   console.log(`
 Skills for Claude Code, Cursor, Codex and GitHub Copilot.
 
-  npx github:kulichevskiy/skills <skill|sdlc>            into this project
-  npx github:kulichevskiy/skills <skill|sdlc> --global   for every project
+  npx github:kulichevskiy/skills <skill|sdlc|sdlc-ui>            into this project
+  npx github:kulichevskiy/skills <skill|sdlc|sdlc-ui> --global   for every project
 
   --target=<${TARGETS.map((it) => it.name).join('|')}>   where to install, asked if omitted
   --lang=<language>   language the agent answers in, asked if omitted
@@ -54,15 +59,14 @@ stays usable from a script: it installs for Claude Code in English.
 
 Available:
 
-  sdlc
-    The complete seven-skill workflow; start with sdlc-setup.
+${[...BUNDLES].map(([name, bundle]) => `  ${name}\n    ${bundle.summary}`).join('\n\n')}
 `)
   if (skills.length === 0) {
     console.log('  (nothing found — skills/ is empty)\n')
     return
   }
   for (const skill of skills) {
-    if (SDLC.includes(skill.name)) continue
+    if (skill.name.startsWith('sdlc-')) continue
     console.log(`  ${skill.name}`)
     if (skill.summary) console.log(`    ${skill.summary}`)
   }
@@ -125,7 +129,7 @@ for (const arg of args.filter((it) => it.startsWith('--'))) {
   flags.set(key, value)
 }
 const positional = args.filter((it) => !it.startsWith('--'))
-if (positional.length > 1) fail('Choose one skill or the sdlc bundle.')
+if (positional.length > 1) fail('Choose one skill or bundle.')
 const [requested] = positional
 const skills = available()
 
@@ -135,9 +139,10 @@ if (!requested || flags.has('help')) {
   process.exit(0)
 }
 
-if (SDLC.includes(requested)) fail('Install SDLC skills together: use sdlc as the install name.')
-const selected = requested === 'sdlc' ? SDLC : [requested]
-if (requested !== 'sdlc' && !skills.some((it) => it.name === requested)) {
+const bundle = BUNDLES.get(requested)
+if (!bundle && requested.startsWith('sdlc-')) fail('Install SDLC skills together: use sdlc, or sdlc-ui for only the UI skills.')
+const selected = bundle ? bundle.members : [requested]
+if (!bundle && !skills.some((it) => it.name === requested)) {
   fail(`No skill named "${requested}" here. Available: ${skills.map((it) => it.name).join(', ') || '(none)'}`)
 }
 for (const name of selected) {
@@ -194,10 +199,10 @@ for (const name of selected) {
   cpSync(join(SOURCE, name), destination, { recursive: true })
   localize(join(destination, 'SKILL.md'), language)
 }
-const destination = requested === 'sdlc' ? directory : join(directory, requested)
+const destination = bundle ? directory : join(directory, requested)
 const shown = everywhere ? destination : relative(process.cwd(), destination) || destination
 const scope = everywhere ? 'in every project' : 'in this project'
-const entry = requested === 'sdlc' ? 'sdlc-setup' : requested
+const entry = bundle ? bundle.entry : requested
 const invocation = target.call ? `call it as ${target.call}${entry}` : `ask the agent to use ${entry}`
 
 console.log(`
